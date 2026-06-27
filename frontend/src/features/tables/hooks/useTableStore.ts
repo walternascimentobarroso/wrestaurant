@@ -9,6 +9,12 @@ import {
 } from "@/features/menu/services/productStorage";
 import { createSaleFromTable, recordSale } from "@/features/sales/services/salesStorage";
 import type { PaymentDetails } from "@/features/sales/types";
+import {
+  canAddProductToOrder,
+  deductStockForOrder,
+  validateOrderStock,
+} from "@/features/stock/services/stockService";
+import type { StockActionResult } from "@/features/stock/types";
 
 import {
   calculateTableTotal,
@@ -76,7 +82,21 @@ export function useTableStore() {
   );
 
   const addProduct = useCallback(
-    (tableId: number, productId: string) => {
+    (tableId: number, productId: string): StockActionResult => {
+      const product = products.find((entry) => entry.id === productId);
+      if (!product) {
+        return { ok: false, error: "Produto não encontrado." };
+      }
+
+      const table = tables.find((entry) => entry.id === tableId);
+      const currentQuantity =
+        table?.items.find((item) => item.productId === productId)?.quantity ?? 0;
+
+      const availability = canAddProductToOrder(product, currentQuantity);
+      if (!availability.ok) {
+        return availability;
+      }
+
       saveTables(
         updateTableItems(tables, tableId, (items) => {
           const existing = items.find((item) => item.productId === productId);
@@ -90,8 +110,10 @@ export function useTableStore() {
           return [...items, { productId, quantity: 1 }];
         }),
       );
+
+      return { ok: true };
     },
-    [tables, saveTables],
+    [tables, products, saveTables],
   );
 
   const removeProduct = useCallback(
@@ -112,11 +134,24 @@ export function useTableStore() {
   );
 
   const receivePayment = useCallback(
-    (tableId: number, payment: PaymentDetails) => {
+    (tableId: number, payment: PaymentDetails): StockActionResult => {
       const table = tables.find((entry) => entry.id === tableId);
-      if (table && table.items.length > 0) {
-        recordSale(createSaleFromTable(table, payment));
+      if (!table || table.items.length === 0) {
+        return { ok: true };
       }
+
+      const stockValidation = validateOrderStock(table.items, products);
+      if (!stockValidation.ok) {
+        return stockValidation;
+      }
+
+      const sale = createSaleFromTable(table, payment);
+      const stockDeduction = deductStockForOrder(table.items, sale.id);
+      if (!stockDeduction.ok) {
+        return stockDeduction;
+      }
+
+      recordSale(sale);
 
       saveTables(
         tables.map((entry) =>
@@ -125,8 +160,10 @@ export function useTableStore() {
             : entry,
         ),
       );
+
+      return { ok: true };
     },
-    [tables, saveTables],
+    [tables, products, saveTables],
   );
 
   const clearTable = useCallback(

@@ -1,10 +1,11 @@
 import { FAKE_PRODUCTS } from "@/features/tables/data/fakeProducts";
 import type { Product } from "@/features/tables/types";
+import { normalizeProducts } from "@/features/stock/utils/productStock";
 
 const STORAGE_KEY = "restaurant-products";
 const STORAGE_EVENT = "restaurant-products-change";
 
-const SERVER_SNAPSHOT = FAKE_PRODUCTS;
+const SERVER_SNAPSHOT = normalizeProducts(FAKE_PRODUCTS);
 
 let cachedClientRaw: string | null | undefined;
 let cachedClientSnapshot: Product[] | null = null;
@@ -12,7 +13,10 @@ let cachedClientSnapshot: Product[] | null = null;
 function parseStoredProducts(raw: string): Product[] {
   try {
     const parsed = JSON.parse(raw) as Product[];
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : SERVER_SNAPSHOT;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return SERVER_SNAPSHOT;
+    }
+    return normalizeProducts(parsed);
   } catch {
     return SERVER_SNAPSHOT;
   }

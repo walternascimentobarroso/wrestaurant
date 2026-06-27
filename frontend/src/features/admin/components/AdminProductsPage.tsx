@@ -17,6 +17,7 @@ import { useMenuCatalog } from "@/features/menu/hooks/useMenuCatalog";
 import { useProductAdmin } from "@/features/menu/hooks/useProductAdmin";
 import { getSubcategoryNames } from "@/features/menu/services/menuCatalogStorage";
 import { useSettings } from "@/features/settings/hooks/useSettings";
+import { isLowStock, isOutOfStock } from "@/features/stock/utils/productStock";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/features/tables/types";
 
@@ -25,6 +26,9 @@ interface ProductFormState {
   price: string;
   category: string;
   subcategory: string;
+  trackStock: boolean;
+  stockQuantity: string;
+  minStock: string;
 }
 
 const EMPTY_FORM: ProductFormState = {
@@ -32,6 +36,9 @@ const EMPTY_FORM: ProductFormState = {
   price: "",
   category: "",
   subcategory: "",
+  trackStock: true,
+  stockQuantity: "50",
+  minStock: "5",
 };
 
 const PAGE_SIZE = 10;
@@ -96,6 +103,9 @@ export function AdminProductsPage() {
       price: "",
       category,
       subcategory: getDefaultSubcategory(category),
+      trackStock: true,
+      stockQuantity: "50",
+      minStock: "5",
     });
     setFormError("");
     setFormOpen(true);
@@ -108,6 +118,9 @@ export function AdminProductsPage() {
       price: String(product.price),
       category: product.category,
       subcategory: product.subcategory,
+      trackStock: product.trackStock,
+      stockQuantity: String(product.stockQuantity),
+      minStock: String(product.minStock),
     });
     setFormError("");
     setFormOpen(true);
@@ -125,11 +138,16 @@ export function AdminProductsPage() {
     event.preventDefault();
 
     const price = Number.parseFloat(form.price.replace(",", "."));
+    const stockQuantity = Number.parseInt(form.stockQuantity, 10);
+    const minStock = Number.parseInt(form.minStock, 10);
     const input = {
       name: form.name,
       price,
       category: form.category,
       subcategory: form.subcategory,
+      trackStock: form.trackStock,
+      stockQuantity,
+      minStock,
     };
 
     const result = editingProduct
@@ -234,6 +252,7 @@ export function AdminProductsPage() {
                   <th className="px-4 py-3 font-medium">Produto</th>
                   <th className="px-4 py-3 font-medium">Categoria</th>
                   <th className="px-4 py-3 font-medium">Subcategoria</th>
+                  <th className="px-4 py-3 font-medium">Estoque</th>
                   <th className="px-4 py-3 font-medium">Preço</th>
                   <th className="px-4 py-3 text-right font-medium">Ações</th>
                 </tr>
@@ -251,6 +270,26 @@ export function AdminProductsPage() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{product.category}</td>
                     <td className="px-4 py-3 text-muted-foreground">{product.subcategory}</td>
+                    <td className="px-4 py-3">
+                      {product.trackStock ? (
+                        <div className="space-y-1">
+                          <span className="font-medium text-foreground">
+                            {product.stockQuantity}
+                          </span>
+                          {isOutOfStock(product) ? (
+                            <span className="block text-xs font-medium text-destructive">
+                              Esgotado
+                            </span>
+                          ) : isLowStock(product) ? (
+                            <span className="block text-xs font-medium text-amber-600">
+                              Baixo (mín. {product.minStock})
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Sem controle</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-semibold text-primary">
                       {formatCurrency(product.price)}
                     </td>
@@ -375,6 +414,66 @@ export function AdminProductsPage() {
                 className="h-11 rounded-xl px-3"
                 placeholder="0,00"
               />
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-border p-4">
+              <label className="flex items-center gap-3 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={form.trackStock}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      trackStock: event.target.checked,
+                    }))
+                  }
+                  className="size-4 rounded border-input"
+                />
+                Controlar estoque deste produto
+              </label>
+
+              {form.trackStock ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label htmlFor="product-stock" className="text-sm font-medium">
+                      Estoque atual
+                    </label>
+                    <Input
+                      id="product-stock"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={form.stockQuantity}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          stockQuantity: event.target.value,
+                        }))
+                      }
+                      className="h-11 rounded-xl px-3"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="product-min-stock" className="text-sm font-medium">
+                      Estoque mínimo
+                    </label>
+                    <Input
+                      id="product-min-stock"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={form.minStock}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          minStock: event.target.value,
+                        }))
+                      }
+                      className="h-11 rounded-xl px-3"
+                    />
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="space-y-2">

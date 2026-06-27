@@ -1,6 +1,10 @@
+import { normalizeProducts } from "@/features/stock/utils/productStock";
+
 import type { Product } from "../types";
 
-export const FAKE_PRODUCTS: Product[] = [
+type ProductSeed = Omit<Product, "trackStock" | "stockQuantity" | "minStock">;
+
+const BASE_FAKE_PRODUCTS: ProductSeed[] = [
   { id: "p1", name: "Bruschetta", price: 24.9, category: "Entradas", subcategory: "Frias" },
   { id: "p2", name: "Carpaccio", price: 38.5, category: "Entradas", subcategory: "Frias" },
   { id: "p3", name: "Tábua de queijos", price: 42.0, category: "Entradas", subcategory: "Frias" },
@@ -31,6 +35,10 @@ export const FAKE_PRODUCTS: Product[] = [
   { id: "p25", name: "Petit gateau", price: 26.5, category: "Sobremesas", subcategory: "Quentes" },
   { id: "p26", name: "Banana flambada", price: 24.0, category: "Sobremesas", subcategory: "Quentes" },
 ];
+
+export const FAKE_PRODUCTS: Product[] = normalizeProducts(
+  BASE_FAKE_PRODUCTS as Product[],
+);
 
 export function getCategories(): string[] {
   return [...new Set(FAKE_PRODUCTS.map((product) => product.category))];

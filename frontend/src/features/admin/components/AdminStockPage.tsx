@@ -1,0 +1,342 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Package, Plus, Minus } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useStock } from "@/features/stock/hooks/useStock";
+import type { StockFilter } from "@/features/stock/types";
+import { isLowStock, isOutOfStock } from "@/features/stock/utils/productStock";
+import type { Product } from "@/features/tables/types";
+import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 10;
+
+const FILTER_OPTIONS: { value: StockFilter; label: string }[] = [
+  { value: "all", label: "Todos" },
+  { value: "low", label: "Estoque baixo" },
+  { value: "out", label: "Esgotados" },
+];
+
+export function AdminStockPage() {
+  const { trackedProducts, lowStockCount, outOfStockCount, getFilteredProducts, adjustStock } =
+    useStock();
+
+  const [filter, setFilter] = useState<StockFilter>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [adjustTarget, setAdjustTarget] = useState<Product | null>(null);
+  const [adjustMode, setAdjustMode] = useState<"restock" | "adjustment">("restock");
+  const [adjustQuantity, setAdjustQuantity] = useState("1");
+  const [adjustReason, setAdjustReason] = useState("");
+  const [adjustError, setAdjustError] = useState("");
+
+  const filteredProducts = useMemo(
+    () =>
+      getFilteredProducts(filter).sort((a, b) => a.name.localeCompare(b.name, "pt-PT")),
+    [filter, getFilteredProducts],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const effectivePage = Math.min(currentPage, totalPages);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (effectivePage - 1) * PAGE_SIZE;
+    return filteredProducts.slice(start, start + PAGE_SIZE);
+  }, [filteredProducts, effectivePage]);
+
+  const rangeStart =
+    filteredProducts.length === 0 ? 0 : (effectivePage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(effectivePage * PAGE_SIZE, filteredProducts.length);
+
+  function handleFilterChange(nextFilter: StockFilter) {
+    setFilter(nextFilter);
+    setCurrentPage(1);
+  }
+
+  function openAdjust(product: Product, mode: "restock" | "adjustment") {
+    setAdjustTarget(product);
+    setAdjustMode(mode);
+    setAdjustQuantity("1");
+    setAdjustReason("");
+    setAdjustError("");
+  }
+
+  function handleAdjustSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!adjustTarget) {
+      return;
+    }
+
+    const quantity = Number.parseInt(adjustQuantity, 10);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      setAdjustError("Informe uma quantidade válida maior que zero.");
+      return;
+    }
+
+    const delta = adjustMode === "restock" ? quantity : -quantity;
+    const result = adjustStock(adjustTarget.id, delta, adjustMode, adjustReason);
+
+    if (!result.ok) {
+      setAdjustError(result.error ?? "Não foi possível ajustar o estoque.");
+      return;
+    }
+
+    setAdjustTarget(null);
+    setAdjustQuantity("1");
+    setAdjustReason("");
+    setAdjustError("");
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <header className="shrink-0 border-b border-border bg-card px-6 py-4">
+        <h2 className="font-heading text-xl font-bold text-foreground">Estoque</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {trackedProducts.length} produtos com controle de estoque
+        </p>
+      </header>
+
+      <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-elevated">
+            <p className="text-sm text-muted-foreground">Com controle</p>
+            <p className="mt-1 font-heading text-2xl font-bold text-foreground">
+              {trackedProducts.length}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-elevated">
+            <p className="text-sm text-muted-foreground">Estoque baixo</p>
+            <p className="mt-1 font-heading text-2xl font-bold text-amber-600">
+              {lowStockCount}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-elevated">
+            <p className="text-sm text-muted-foreground">Esgotados</p>
+            <p className="mt-1 font-heading text-2xl font-bold text-destructive">
+              {outOfStockCount}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {FILTER_OPTIONS.map((option) => (
+            <Button
+              key={option.value}
+              type="button"
+              variant={filter === option.value ? "default" : "outline"}
+              className="rounded-xl"
+              onClick={() => handleFilterChange(option.value)}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+
+        {filteredProducts.length === 0 ? (
+          <div className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-border px-6 py-10">
+            <p className="text-center text-muted-foreground">
+              Nenhum produto encontrado para este filtro.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-elevated">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40 text-left">
+                  <th className="px-4 py-3 font-medium">Produto</th>
+                  <th className="px-4 py-3 font-medium">Categoria</th>
+                  <th className="px-4 py-3 font-medium">Atual</th>
+                  <th className="px-4 py-3 font-medium">Mínimo</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 text-right font-medium">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedProducts.map((product) => (
+                  <tr key={product.id} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <Package className="size-4" />
+                        </div>
+                        <span className="font-medium text-foreground">{product.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{product.category}</td>
+                    <td className="px-4 py-3 font-semibold text-foreground">
+                      {product.stockQuantity}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{product.minStock}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+                          isOutOfStock(product)
+                            ? "bg-destructive/15 text-destructive"
+                            : isLowStock(product)
+                              ? "bg-amber-500/15 text-amber-700"
+                              : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {isOutOfStock(product)
+                          ? "Esgotado"
+                          : isLowStock(product)
+                            ? "Baixo"
+                            : "Normal"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg"
+                          onClick={() => openAdjust(product, "restock")}
+                        >
+                          <Plus className="size-3.5" />
+                          Entrada
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg"
+                          onClick={() => openAdjust(product, "adjustment")}
+                        >
+                          <Minus className="size-3.5" />
+                          Saída
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {filteredProducts.length > PAGE_SIZE ? (
+              <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Mostrando {rangeStart}–{rangeEnd} de {filteredProducts.length} produtos
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl"
+                    disabled={effectivePage <= 1}
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  >
+                    Anterior
+                  </Button>
+                  <span className="min-w-24 text-center text-sm font-medium text-foreground">
+                    Página {effectivePage} de {totalPages}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl"
+                    disabled={effectivePage >= totalPages}
+                    onClick={() =>
+                      setCurrentPage((page) => Math.min(totalPages, page + 1))
+                    }
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+
+      <Dialog
+        open={adjustTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAdjustTarget(null);
+            setAdjustError("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md rounded-3xl p-6 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              {adjustMode === "restock" ? "Entrada de estoque" : "Saída de estoque"}
+            </DialogTitle>
+            <DialogDescription>
+              {adjustTarget
+                ? `${adjustTarget.name} — estoque atual: ${adjustTarget.stockQuantity}`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleAdjustSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="adjust-quantity" className="text-sm font-medium">
+                Quantidade
+              </label>
+              <Input
+                id="adjust-quantity"
+                type="number"
+                min={1}
+                step={1}
+                value={adjustQuantity}
+                onChange={(event) => {
+                  setAdjustQuantity(event.target.value);
+                  setAdjustError("");
+                }}
+                className="h-11 rounded-xl px-3"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="adjust-reason" className="text-sm font-medium">
+                Motivo
+              </label>
+              <Input
+                id="adjust-reason"
+                value={adjustReason}
+                onChange={(event) => {
+                  setAdjustReason(event.target.value);
+                  setAdjustError("");
+                }}
+                className="h-11 rounded-xl px-3"
+                placeholder={
+                  adjustMode === "restock" ? "Ex.: Compra do fornecedor" : "Ex.: Perda ou quebra"
+                }
+              />
+            </div>
+
+            {adjustError ? <p className="text-sm text-destructive">{adjustError}</p> : null}
+
+            <DialogFooter className="border-0 bg-transparent p-0 sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => setAdjustTarget(null)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" className="rounded-xl">
+                Confirmar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

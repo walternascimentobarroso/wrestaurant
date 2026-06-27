@@ -15,6 +15,8 @@ import { useProducts } from "@/features/menu/hooks/useProducts";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 
 import type { PaymentDetails } from "@/features/sales/types";
+import type { StockActionResult } from "@/features/stock/types";
+import { validateOrderStock } from "@/features/stock/services/stockService";
 
 import { ReceivePaymentDialog } from "./ReceivePaymentDialog";
 import type { TableOrderItem } from "../types";
@@ -23,7 +25,7 @@ interface OrderSummaryProps {
   items: TableOrderItem[];
   tableNumber: number;
   onRemove: (productId: string) => void;
-  onReceive: (payment: PaymentDetails) => void;
+  onReceive: (payment: PaymentDetails) => StockActionResult;
 }
 
 interface ItemToRemove {
@@ -49,6 +51,12 @@ export function OrderSummary({
   }, 0);
 
   const itemCount = items.reduce((count, item) => count + item.quantity, 0);
+  const stockValidation = validateOrderStock(items, products);
+  const stockWarning = stockValidation.ok ? null : stockValidation.error;
+
+  function handleConfirmPayment(payment: PaymentDetails): StockActionResult {
+    return onReceive(payment);
+  }
 
   function handleConfirmRemove() {
     if (!itemToRemove) {
@@ -138,10 +146,14 @@ export function OrderSummary({
               <Button
                 type="button"
                 onClick={() => setIsPaymentOpen(true)}
+                disabled={Boolean(stockWarning)}
                 className="mt-4 h-14 w-full rounded-2xl text-base font-semibold shadow-elevated hover:shadow-elevated-lg"
               >
                 Receber
               </Button>
+              {stockWarning ? (
+                <p className="mt-3 text-sm text-destructive">{stockWarning}</p>
+              ) : null}
             </div>
           </>
         )}
@@ -191,7 +203,7 @@ export function OrderSummary({
         onOpenChange={setIsPaymentOpen}
         tableNumber={tableNumber}
         total={total}
-        onConfirm={onReceive}
+        onConfirm={handleConfirmPayment}
       />
     </>
   );

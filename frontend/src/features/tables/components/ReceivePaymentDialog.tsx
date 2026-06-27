@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useSettings } from "@/features/settings/hooks/useSettings";
+import type { StockActionResult } from "@/features/stock/types";
 import { cn } from "@/lib/utils";
 
 import type { PaymentMethod } from "../types";
@@ -26,7 +27,7 @@ interface ReceivePaymentDialogProps {
     method: PaymentMethod;
     amountReceived: number;
     change: number;
-  }) => void;
+  }) => StockActionResult;
 }
 
 function formatAmountForInput(value: number): string {
@@ -51,6 +52,7 @@ export function ReceivePaymentDialog({
   const [amountReceived, setAmountReceived] = useState(() =>
     formatAmountForInput(total),
   );
+  const [confirmError, setConfirmError] = useState("");
 
   const received = parseAmountInput(amountReceived);
   const change = method === "cash" ? Math.max(0, received - total) : 0;
@@ -60,6 +62,7 @@ export function ReceivePaymentDialog({
     if (!nextOpen) {
       setMethod(null);
       setAmountReceived(formatAmountForInput(total));
+      setConfirmError("");
     }
     onOpenChange(nextOpen);
   }
@@ -75,13 +78,21 @@ export function ReceivePaymentDialog({
     if (!method || isInsufficientCash) {
       return;
     }
-    onConfirm({
+
+    const result = onConfirm({
       method,
       amountReceived: received,
       change,
     });
+
+    if (!result.ok) {
+      setConfirmError(result.error ?? "Não foi possível confirmar o pagamento.");
+      return;
+    }
+
     setMethod(null);
     setAmountReceived(formatAmountForInput(total));
+    setConfirmError("");
     onOpenChange(false);
   }
 
@@ -187,6 +198,12 @@ export function ReceivePaymentDialog({
             </button>
           </div>
         </div>
+
+        {confirmError ? (
+          <p className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {confirmError}
+          </p>
+        ) : null}
 
         <Button
           type="button"

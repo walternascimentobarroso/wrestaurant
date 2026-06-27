@@ -7,19 +7,22 @@ import { useMenuCatalog } from "@/features/menu/hooks/useMenuCatalog";
 import { useProducts, useProductsByCategory } from "@/features/menu/hooks/useProducts";
 import { getSubcategoryNames } from "@/features/menu/services/menuCatalogStorage";
 import { useSettings } from "@/features/settings/hooks/useSettings";
+import type { StockActionResult } from "@/features/stock/types";
+import { isLowStock, isOutOfStock } from "@/features/stock/utils/productStock";
 import { cn } from "@/lib/utils";
 
 import type { TableOrderItem } from "../types";
 
 interface ProductListProps {
   items: TableOrderItem[];
-  onAdd: (productId: string) => void;
+  onAdd: (productId: string) => StockActionResult;
 }
 
 export function ProductList({ items, onAdd }: ProductListProps) {
   const { categories } = useMenuCatalog();
   const { products } = useProducts();
   const { formatCurrency } = useSettings();
+  const [addError, setAddError] = useState<string | null>(null);
 
   const categoryNames = categories.map((category) => category.name);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -43,6 +46,15 @@ export function ProductList({ items, onAdd }: ProductListProps) {
 
   function handleSubcategoryChange(subcategory: string) {
     setSelectedSubcategory(subcategory);
+  }
+
+  function handleAddProduct(productId: string) {
+    const result = onAdd(productId);
+    if (!result.ok) {
+      setAddError(result.error ?? "Não foi possível adicionar o produto.");
+      return;
+    }
+    setAddError(null);
   }
 
   function getQuantity(productId: string): number {
@@ -77,6 +89,12 @@ export function ProductList({ items, onAdd }: ProductListProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {addError ? (
+        <div className="mb-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {addError}
+        </div>
+      ) : null}
+
       <div
         role="tablist"
         aria-label="Categorias do cardápio"
@@ -184,19 +202,38 @@ export function ProductList({ items, onAdd }: ProductListProps) {
           <div className="grid grid-cols-2 gap-3 pb-4 md:grid-cols-3">
             {categoryProducts.map((product) => {
               const quantity = getQuantity(product.id);
+              const outOfStock = isOutOfStock(product);
+              const lowStock = isLowStock(product);
+              const orderQuantity = quantity;
+              const cannotAdd =
+                outOfStock ||
+                (product.trackStock && product.stockQuantity <= orderQuantity);
 
               return (
                 <button
                   key={product.id}
                   type="button"
-                  onClick={() => onAdd(product.id)}
+                  disabled={cannotAdd}
+                  onClick={() => handleAddProduct(product.id)}
                   className={cn(
-                    "relative flex min-h-[7.5rem] flex-col justify-between rounded-2xl border-2 p-4 text-left shadow-elevated transition hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:scale-[0.98] active:shadow-pressed",
-                    quantity > 0
+                    "relative flex min-h-[7.5rem] flex-col justify-between rounded-2xl border-2 p-4 text-left shadow-elevated transition",
+                    cannotAdd
+                      ? "cursor-not-allowed border-border bg-muted/40 opacity-70"
+                      : "hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:scale-[0.98] active:shadow-pressed",
+                    quantity > 0 && !cannotAdd
                       ? "border-primary bg-primary/10"
-                      : "border-border bg-card",
+                      : !cannotAdd && "border-border bg-card",
                   )}
                 >
+                  {outOfStock ? (
+                    <span className="absolute left-3 top-3 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-semibold text-destructive">
+                      Esgotado
+                    </span>
+                  ) : lowStock ? (
+                    <span className="absolute left-3 top-3 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                      Restam {product.stockQuantity}
+                    </span>
+                  ) : null}
                   {quantity > 0 && (
                     <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                       {quantity}

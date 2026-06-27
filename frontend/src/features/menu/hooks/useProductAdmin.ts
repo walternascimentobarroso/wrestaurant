@@ -18,6 +18,9 @@ export interface ProductInput {
   price: number;
   category: string;
   subcategory: string;
+  trackStock: boolean;
+  stockQuantity: number;
+  minStock: number;
 }
 
 function normalizeName(value: string): string {
@@ -32,6 +35,29 @@ function isProductInActiveOrders(productId: string): boolean {
   return getTablesSnapshot().some((table) =>
     table.items.some((item) => item.productId === productId),
   );
+}
+
+function validateStockFields(input: ProductInput): string | null {
+  if (input.trackStock && (!Number.isFinite(input.stockQuantity) || input.stockQuantity < 0)) {
+    return "Informe um estoque válido (zero ou maior).";
+  }
+
+  if (input.trackStock && (!Number.isFinite(input.minStock) || input.minStock < 0)) {
+    return "Informe um estoque mínimo válido (zero ou maior).";
+  }
+
+  return null;
+}
+
+function buildProductFields(input: ProductInput): Pick<
+  Product,
+  "trackStock" | "stockQuantity" | "minStock"
+> {
+  return {
+    trackStock: input.trackStock,
+    stockQuantity: input.trackStock ? input.stockQuantity : 0,
+    minStock: input.trackStock ? input.minStock : 0,
+  };
 }
 
 export function useProductAdmin() {
@@ -60,12 +86,18 @@ export function useProductAdmin() {
         return { ok: false, error: "Selecione categoria e subcategoria." };
       }
 
+      const stockError = validateStockFields(input);
+      if (stockError) {
+        return { ok: false, error: stockError };
+      }
+
       const newProduct: Product = {
         id: createProductId(),
         name,
         price: input.price,
         category: input.category,
         subcategory: input.subcategory,
+        ...buildProductFields(input),
       };
 
       saveProducts([newProduct, ...products]);
@@ -94,6 +126,11 @@ export function useProductAdmin() {
         return { ok: false, error: "Selecione categoria e subcategoria." };
       }
 
+      const stockError = validateStockFields(input);
+      if (stockError) {
+        return { ok: false, error: stockError };
+      }
+
       saveProducts(
         products.map((entry) =>
           entry.id === productId
@@ -103,6 +140,7 @@ export function useProductAdmin() {
                 price: input.price,
                 category: input.category,
                 subcategory: input.subcategory,
+                ...buildProductFields(input),
               }
             : entry,
         ),

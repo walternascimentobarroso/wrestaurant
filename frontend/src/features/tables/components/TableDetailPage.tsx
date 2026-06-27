@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { OrderSummary } from "./OrderSummary";
 import { ProductList } from "./ProductList";
 import type { PaymentDetails } from "@/features/sales/types";
+import type { StockActionResult } from "@/features/stock/types";
 import { TABLE_CATEGORY_LABELS } from "../types";
 import { useTableStore } from "../hooks/useTableStore";
 
@@ -47,8 +48,8 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
     );
   }
 
-  function handleReceive(payment: PaymentDetails) {
-    receivePayment(tableId, payment);
+  function handleReceive(payment: PaymentDetails): StockActionResult {
+    return receivePayment(tableId, payment);
   }
 
   return (

@@ -20,6 +20,9 @@ export interface Product {
   price: number;
   category: string;
   subcategory: string;
+  trackStock: boolean;
+  stockQuantity: number;
+  minStock: number;
 }
 
 export interface TableOrderItem {

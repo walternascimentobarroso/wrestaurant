@@ -3,7 +3,8 @@
 import Link from "next/link";
 
 import { AppHeaderActions } from "@/components/app-header-actions";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import { OrderSummary } from "./OrderSummary";
 import { ProductList } from "./ProductList";
@@ -32,13 +33,15 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
     return (
       <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-background">
         <p className="text-lg text-muted-foreground">Mesa não encontrada.</p>
-        <Button
-          render={<Link href="/" />}
-          size="lg"
-          className="min-h-12 rounded-2xl px-6"
+        <Link
+          href="/"
+          className={cn(
+            buttonVariants({ size: "lg" }),
+            "min-h-12 rounded-2xl px-6",
+          )}
         >
           Voltar para mesas
-        </Button>
+        </Link>
       </div>
     );
   }
@@ -52,14 +55,16 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
       <header className="shrink-0 border-b border-border bg-card shadow-elevated">
         <div className="flex items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="icon-lg"
-              className="size-12 rounded-2xl"
-              render={<Link href="/" aria-label="Voltar" />}
+            <Link
+              href="/"
+              aria-label="Voltar"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "icon-lg" }),
+                "size-12 rounded-2xl",
+              )}
             >
               ←
-            </Button>
+            </Link>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">
                 Mesa {table.number}

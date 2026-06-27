@@ -1,4 +1,4 @@
-import { FAKE_PRODUCTS } from "@/features/tables/data/fakeProducts";
+import { getProductsSnapshot } from "@/features/menu/services/productStorage";
 import { calculateTableTotal } from "@/features/tables/services/tableStorage";
 import type { Table } from "@/features/tables/types";
 
@@ -91,8 +91,10 @@ export function ensureWeeklyDemoSales(): void {
 }
 
 function buildSaleItems(table: Table): SaleItem[] {
+  const products = getProductsSnapshot();
+
   return table.items.flatMap((item) => {
-    const product = FAKE_PRODUCTS.find((p) => p.id === item.productId);
+    const product = products.find((entry) => entry.id === item.productId);
     if (!product) {
       return [];
     }
@@ -118,7 +120,7 @@ export function createSaleFromTable(
   payment: PaymentDetails,
 ): Sale {
   const items = buildSaleItems(table);
-  const total = calculateTableTotal(table.items, FAKE_PRODUCTS);
+  const total = calculateTableTotal(table.items, getProductsSnapshot());
 
   return {
     id: crypto.randomUUID(),

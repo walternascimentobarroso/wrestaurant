@@ -2,7 +2,14 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-import { FAKE_PRODUCTS } from "../data/fakeProducts";
+import {
+  getProductsServerSnapshot,
+  getProductsSnapshot,
+  subscribeProducts,
+} from "@/features/menu/services/productStorage";
+import { createSaleFromTable, recordSale } from "@/features/sales/services/salesStorage";
+import type { PaymentDetails } from "@/features/sales/types";
+
 import {
   calculateTableTotal,
   countTableItems,
@@ -11,14 +18,12 @@ import {
   persistTables,
   subscribeTables,
 } from "../services/tableStorage";
-import { createSaleFromTable, recordSale } from "@/features/sales/services/salesStorage";
-import type { PaymentDetails } from "@/features/sales/types";
-import type { Table, TableOrderItem, TableWithDetails } from "../types";
+import type { Product, Table, TableOrderItem, TableWithDetails } from "../types";
 
-function enrichTable(table: Table): TableWithDetails {
+function enrichTable(table: Table, products: Product[]): TableWithDetails {
   return {
     ...table,
-    total: calculateTableTotal(table.items, FAKE_PRODUCTS),
+    total: calculateTableTotal(table.items, products),
     itemCount: countTableItems(table.items),
   };
 }
@@ -46,6 +51,12 @@ function updateTableItems(
 }
 
 export function useTableStore() {
+  const products = useSyncExternalStore(
+    subscribeProducts,
+    getProductsSnapshot,
+    getProductsServerSnapshot,
+  );
+
   const tables = useSyncExternalStore(
     subscribeTables,
     getTablesSnapshot,
@@ -59,9 +70,9 @@ export function useTableStore() {
   const getTable = useCallback(
     (tableId: number): TableWithDetails | undefined => {
       const table = tables.find((t) => t.id === tableId);
-      return table ? enrichTable(table) : undefined;
+      return table ? enrichTable(table, products) : undefined;
     },
-    [tables],
+    [tables, products],
   );
 
   const addProduct = useCallback(
@@ -131,7 +142,7 @@ export function useTableStore() {
     [tables, saveTables],
   );
 
-  const enrichedTables = tables.map(enrichTable);
+  const enrichedTables = tables.map((table) => enrichTable(table, products));
 
   return {
     tables: enrichedTables,

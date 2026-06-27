@@ -2,7 +2,12 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-import { FAKE_PRODUCTS } from "../data/fakeProducts";
+import {
+  getProductsServerSnapshot,
+  getProductsSnapshot,
+  subscribeProducts,
+} from "@/features/menu/services/productStorage";
+
 import {
   calculateTableTotal,
   countTableItems,
@@ -11,7 +16,7 @@ import {
   persistTables,
   subscribeTables,
 } from "../services/tableStorage";
-import type { Table, TableCategory, TableWithDetails } from "../types";
+import type { Product, Table, TableCategory, TableWithDetails } from "../types";
 
 type AdminActionResult = { ok: true } | { ok: false; error: string };
 
@@ -25,10 +30,10 @@ interface UpdateTableInput {
   category: TableCategory;
 }
 
-function enrichTable(table: Table): TableWithDetails {
+function enrichTable(table: Table, products: Product[]): TableWithDetails {
   return {
     ...table,
-    total: calculateTableTotal(table.items, FAKE_PRODUCTS),
+    total: calculateTableTotal(table.items, products),
     itemCount: countTableItems(table.items),
   };
 }
@@ -42,6 +47,12 @@ function getNextTableId(tables: Table[]): number {
 }
 
 export function useTableAdmin() {
+  const products = useSyncExternalStore(
+    subscribeProducts,
+    getProductsSnapshot,
+    getProductsServerSnapshot,
+  );
+
   const tables = useSyncExternalStore(
     subscribeTables,
     getTablesSnapshot,
@@ -121,7 +132,7 @@ export function useTableAdmin() {
   );
 
   return {
-    tables: tables.map(enrichTable),
+    tables: tables.map((table) => enrichTable(table, products)),
     createTable,
     updateTable,
     deleteTable,

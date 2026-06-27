@@ -11,12 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useProducts } from "@/features/menu/hooks/useProducts";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 
 import type { PaymentDetails } from "@/features/sales/types";
 
 import { ReceivePaymentDialog } from "./ReceivePaymentDialog";
-import { FAKE_PRODUCTS } from "../data/fakeProducts";
 import type { TableOrderItem } from "../types";
 
 interface OrderSummaryProps {
@@ -39,11 +39,12 @@ export function OrderSummary({
   onReceive,
 }: OrderSummaryProps) {
   const { formatCurrency } = useSettings();
+  const { products } = useProducts();
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [itemToRemove, setItemToRemove] = useState<ItemToRemove | null>(null);
 
   const total = items.reduce((sum, item) => {
-    const product = FAKE_PRODUCTS.find((p) => p.id === item.productId);
+    const product = products.find((entry) => entry.id === item.productId);
     return sum + (product?.price ?? 0) * item.quantity;
   }, 0);
 
@@ -82,9 +83,7 @@ export function OrderSummary({
           <>
             <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">
               {items.map((item) => {
-                const product = FAKE_PRODUCTS.find(
-                  (p) => p.id === item.productId,
-                );
+                const product = products.find((entry) => entry.id === item.productId);
                 if (!product) {
                   return null;
                 }

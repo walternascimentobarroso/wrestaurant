@@ -1,5 +1,19 @@
 export type PaymentMethod = "cash" | "card";
 
+export type TableCategory = "counter" | "indoor" | "outdoor";
+
+export const TABLE_CATEGORY_LABELS: Record<TableCategory, string> = {
+  counter: "Balcão",
+  indoor: "Mesa",
+  outdoor: "Mesa",
+};
+
+export const TABLE_SECTION_LABELS: Record<TableCategory, string> = {
+  counter: "Balcão",
+  indoor: "Mesas internas",
+  outdoor: "Mesas externas",
+};
+
 export interface Product {
   id: string;
   name: string;
@@ -16,6 +30,7 @@ export interface TableOrderItem {
 export interface Table {
   id: number;
   number: number;
+  category: TableCategory;
   status: "free" | "occupied";
   items: TableOrderItem[];
   openedAt?: string;

@@ -3,6 +3,14 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 
 import type { PaymentDetails } from "@/features/sales/types";
@@ -18,6 +26,12 @@ interface OrderSummaryProps {
   onReceive: (payment: PaymentDetails) => void;
 }
 
+interface ItemToRemove {
+  productId: string;
+  name: string;
+  quantity: number;
+}
+
 export function OrderSummary({
   items,
   tableNumber,
@@ -26,6 +40,7 @@ export function OrderSummary({
 }: OrderSummaryProps) {
   const { formatCurrency } = useSettings();
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState<ItemToRemove | null>(null);
 
   const total = items.reduce((sum, item) => {
     const product = FAKE_PRODUCTS.find((p) => p.id === item.productId);
@@ -33,6 +48,15 @@ export function OrderSummary({
   }, 0);
 
   const itemCount = items.reduce((count, item) => count + item.quantity, 0);
+
+  function handleConfirmRemove() {
+    if (!itemToRemove) {
+      return;
+    }
+
+    onRemove(itemToRemove.productId);
+    setItemToRemove(null);
+  }
 
   return (
     <>
@@ -71,7 +95,13 @@ export function OrderSummary({
                   <li key={item.productId}>
                     <button
                       type="button"
-                      onClick={() => onRemove(item.productId)}
+                      onClick={() =>
+                        setItemToRemove({
+                          productId: item.productId,
+                          name: product.name,
+                          quantity: item.quantity,
+                        })
+                      }
                       className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left transition active:scale-[0.98] active:bg-destructive/10"
                     >
                       <div className="min-w-0 flex-1">
@@ -117,6 +147,44 @@ export function OrderSummary({
           </>
         )}
       </div>
+
+      <Dialog
+        open={itemToRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setItemToRemove(null);
+          }
+        }}
+      >
+        <DialogContent className="rounded-2xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remover item</DialogTitle>
+            <DialogDescription>
+              {itemToRemove?.quantity === 1
+                ? `Deseja remover "${itemToRemove.name}" do pedido?`
+                : `Deseja remover 1 unidade de "${itemToRemove?.name}"? Restarão ${(itemToRemove?.quantity ?? 1) - 1}.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 rounded-2xl"
+              onClick={() => setItemToRemove(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="h-12 rounded-2xl"
+              onClick={handleConfirmRemove}
+            >
+              Remover
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ReceivePaymentDialog
         key={isPaymentOpen ? `payment-${total}` : "closed"}

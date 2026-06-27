@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 import { cn } from "@/lib/utils";
 
-import type { TableWithDetails } from "../types";
+import { TABLE_CATEGORY_LABELS, type TableWithDetails } from "../types";
 
 interface TableCardProps {
   table: TableWithDetails;
@@ -14,6 +14,7 @@ interface TableCardProps {
 export function TableCard({ table }: TableCardProps) {
   const { formatCurrency } = useSettings();
   const isOccupied = table.status === "occupied";
+  const categoryLabel = TABLE_CATEGORY_LABELS[table.category];
 
   return (
     <Link
@@ -23,7 +24,7 @@ export function TableCard({ table }: TableCardProps) {
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            Mesa
+            {categoryLabel}
           </p>
           <p className="mt-1 font-heading text-3xl font-bold text-foreground">
             {table.number}

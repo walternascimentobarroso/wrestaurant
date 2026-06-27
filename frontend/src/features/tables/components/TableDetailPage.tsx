@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { OrderSummary } from "./OrderSummary";
 import { ProductList } from "./ProductList";
 import type { PaymentDetails } from "@/features/sales/types";
+import { TABLE_CATEGORY_LABELS } from "../types";
 import { useTableStore } from "../hooks/useTableStore";
 
 interface TableDetailPageProps {
@@ -67,7 +68,7 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
             </Link>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                Mesa {table.number}
+                {TABLE_CATEGORY_LABELS[table.category]} {table.number}
               </p>
               <h1 className="font-heading text-xl font-bold text-foreground">Cardápio</h1>
             </div>

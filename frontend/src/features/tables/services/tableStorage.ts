@@ -9,11 +9,32 @@ const SERVER_SNAPSHOT = createInitialTables();
 let cachedClientRaw: string | null | undefined;
 let cachedClientSnapshot: Table[] | null = null;
 
+function migrateTablesWithoutCategory(stored: Table[]): Table[] {
+  return SERVER_SNAPSHOT.map((initialTable) => {
+    const existing = stored.find((table) => table.id === initialTable.id);
+    if (!existing) {
+      return initialTable;
+    }
+
+    return {
+      ...initialTable,
+      status: existing.status,
+      items: existing.items,
+      openedAt: existing.openedAt,
+    };
+  });
+}
+
 function parseStoredTables(raw: string): Table[] {
   const parsed = JSON.parse(raw) as Table[];
   if (!Array.isArray(parsed) || parsed.length === 0) {
     return SERVER_SNAPSHOT;
   }
+
+  if (!parsed.some((table) => table.category)) {
+    return migrateTablesWithoutCategory(parsed);
+  }
+
   return parsed;
 }
 

@@ -3,8 +3,10 @@
 import { AppHeaderActions } from "@/components/app-header-actions";
 import { brand } from "@/design-system";
 
-import { TableCard } from "./TableCard";
+import { TABLE_CATEGORY_CONFIG } from "../data/initialTables";
+import { TABLE_SECTION_LABELS } from "../types";
 import { useTableStore } from "../hooks/useTableStore";
+import { TableCard } from "./TableCard";
 
 export function TablesPage() {
   const { tables, isLoaded } = useTableStore();
@@ -35,10 +37,27 @@ export function TablesPage() {
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {tables.map((table) => (
-            <TableCard key={table.id} table={table} />
-          ))}
+        <div className="space-y-8">
+          {TABLE_CATEGORY_CONFIG.map(({ category }) => {
+            const categoryTables = tables.filter((table) => table.category === category);
+
+            if (categoryTables.length === 0) {
+              return null;
+            }
+
+            return (
+              <section key={category}>
+                <h2 className="mb-3 font-heading text-lg font-semibold text-foreground">
+                  {TABLE_SECTION_LABELS[category]}
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {categoryTables.map((table) => (
+                    <TableCard key={table.id} table={table} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       </main>
     </div>

@@ -80,8 +80,10 @@ export function ProductList({ items, onAdd }: ProductListProps) {
               onClick={() => handleCategoryChange(category)}
               variant={isActive ? "default" : "outline"}
               className={cn(
-                "h-14 shrink-0 rounded-2xl px-6 text-base font-semibold",
-                !isActive && "bg-card",
+                "h-14 shrink-0 rounded-2xl px-6 text-base font-semibold transition",
+                isActive
+                  ? "shadow-elevated hover:shadow-elevated-lg"
+                  : "bg-card shadow-pressed hover:-translate-y-px hover:shadow-elevated",
               )}
             >
               {category}
@@ -120,9 +122,10 @@ export function ProductList({ items, onAdd }: ProductListProps) {
               onClick={() => setActiveSubcategory(subcategory)}
               variant={isActive ? "default" : "outline"}
               className={cn(
-                "h-11 shrink-0 rounded-xl px-4 text-sm font-semibold",
-                isActive && "bg-accent text-accent-foreground hover:bg-accent/90",
-                !isActive && "bg-card",
+                "h-11 shrink-0 rounded-xl px-4 text-sm font-semibold transition",
+                isActive
+                  ? "bg-accent text-accent-foreground shadow-elevated hover:bg-accent/90 hover:shadow-elevated-lg"
+                  : "bg-card shadow-pressed hover:-translate-y-px hover:shadow-elevated",
               )}
             >
               {subcategory}
@@ -154,10 +157,10 @@ export function ProductList({ items, onAdd }: ProductListProps) {
                 type="button"
                 onClick={() => onAdd(product.id)}
                 className={cn(
-                  "relative flex min-h-[7.5rem] flex-col justify-between rounded-2xl border-2 p-4 text-left transition active:scale-[0.97]",
+                  "relative flex min-h-[7.5rem] flex-col justify-between rounded-2xl border-2 p-4 text-left shadow-elevated transition hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:scale-[0.98] active:shadow-pressed",
                   quantity > 0
                     ? "border-primary bg-primary/10"
-                    : "border-border bg-card active:border-primary/50 active:bg-primary/5",
+                    : "border-border bg-card",
                 )}
               >
                 {quantity > 0 && (

@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { AppHeaderActions } from "@/components/app-header-actions";
 import { Button } from "@/components/ui/button";
 
 import { OrderSummary } from "./OrderSummary";
 import { ProductList } from "./ProductList";
+import type { PaymentMethod } from "../types";
 import { useTableStore } from "../hooks/useTableStore";
 
 interface TableDetailPageProps {
@@ -15,8 +15,7 @@ interface TableDetailPageProps {
 }
 
 export function TableDetailPage({ tableId }: TableDetailPageProps) {
-  const router = useRouter();
-  const { isLoaded, getTable, addProduct, removeProduct, clearTable } =
+  const { isLoaded, getTable, addProduct, removeProduct, receivePayment } =
     useTableStore();
 
   const table = getTable(tableId);
@@ -44,14 +43,13 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
     );
   }
 
-  function handleClear() {
-    clearTable(tableId);
-    router.push("/");
+  function handleReceive(method: PaymentMethod) {
+    receivePayment(tableId, method);
   }
 
   return (
     <div className="flex h-dvh flex-col bg-background">
-      <header className="shrink-0 border-b border-border bg-card shadow-sm">
+      <header className="shrink-0 border-b border-border bg-card shadow-elevated">
         <div className="flex items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-4">
             <Button
@@ -86,7 +84,7 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
             items={table.items}
             tableNumber={table.number}
             onRemove={(productId) => removeProduct(tableId, productId)}
-            onClear={handleClear}
+            onReceive={handleReceive}
           />
         </aside>
       </main>

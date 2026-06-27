@@ -32,7 +32,7 @@ export function SettingsButton() {
             type="button"
             variant="outline"
             size="icon-lg"
-            className="size-12 rounded-2xl"
+            className="size-12 rounded-2xl shadow-pressed hover:-translate-y-px hover:shadow-elevated active:translate-y-px active:shadow-pressed"
             aria-label="Configurações"
           />
         }

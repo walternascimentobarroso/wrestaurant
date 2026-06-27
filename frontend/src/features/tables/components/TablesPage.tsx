@@ -19,7 +19,7 @@ export function TablesPage() {
 
   return (
     <div className="flex h-dvh flex-col bg-background">
-      <header className="shrink-0 border-b border-border bg-card shadow-sm">
+      <header className="shrink-0 border-b border-border bg-card shadow-elevated">
         <div className="flex items-start justify-between gap-4 px-4 py-3">
           <div>
             <p className="font-heading text-xs font-semibold uppercase tracking-wide text-primary">

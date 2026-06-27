@@ -35,7 +35,7 @@ export function ThemeToggle() {
 
   return (
     <div
-      className="flex rounded-2xl border border-border bg-card p-1"
+      className="flex rounded-2xl border border-border bg-card p-1 shadow-elevated"
       role="group"
       aria-label="Tema da interface"
     >
@@ -45,7 +45,7 @@ export function ThemeToggle() {
         size="icon-lg"
         className={cn(
           "size-12 rounded-xl",
-          currentTheme === "light" && "shadow-sm",
+          currentTheme === "light" && "shadow-elevated",
         )}
         onClick={() => setTheme("light")}
         aria-label="Tema claro"
@@ -59,7 +59,7 @@ export function ThemeToggle() {
         size="icon-lg"
         className={cn(
           "size-12 rounded-xl",
-          currentTheme === "dark" && "shadow-sm",
+          currentTheme === "dark" && "shadow-elevated",
         )}
         onClick={() => setTheme("dark")}
         aria-label="Tema escuro"

@@ -18,7 +18,7 @@ export function TableCard({ table }: TableCardProps) {
   return (
     <Link
       href={`/mesas/${table.id}`}
-      className="group block rounded-2xl border border-border bg-card p-6 shadow-sm transition hover:border-primary hover:shadow-md"
+      className="group block rounded-2xl border border-border bg-card p-6 shadow-elevated transition hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:shadow-pressed"
     >
       <div className="flex items-start justify-between">
         <div>

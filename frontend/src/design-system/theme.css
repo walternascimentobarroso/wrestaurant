@@ -1,0 +1,73 @@
+/*
+ * Tokens gerados a partir de design-system.json (Amora Café).
+ * Caramel, Coffee, Mocha, Vanilla, Almond, Espresso.
+ */
+
+:root {
+  --background: #d7bda6;
+  --foreground: #4c2b08;
+  --card: #b7957f;
+  --card-foreground: #4c2b08;
+  --popover: #b7957f;
+  --popover-foreground: #4c2b08;
+  --primary: #ab7743;
+  --primary-foreground: #ffffff;
+  --secondary: #c9a88f;
+  --secondary-foreground: #6d3914;
+  --muted: #c9a88f;
+  --muted-foreground: #6d3914;
+  --accent: #84593d;
+  --accent-foreground: #ffffff;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #84593d66;
+  --input: #84593d80;
+  --ring: #ab7743;
+  --chart-1: #ab7743;
+  --chart-2: #84593d;
+  --chart-3: #6d3914;
+  --chart-4: #b7957f;
+  --chart-5: #4c2b08;
+  --radius: 0.75rem;
+  --sidebar: #b7957f;
+  --sidebar-foreground: #4c2b08;
+  --sidebar-primary: #ab7743;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #c9a88f;
+  --sidebar-accent-foreground: #6d3914;
+  --sidebar-border: #84593d66;
+  --sidebar-ring: #ab7743;
+}
+
+.dark {
+  --background: #4c2b08;
+  --foreground: #ffffff;
+  --card: #6d3914;
+  --card-foreground: #ffffff;
+  --popover: #6d3914;
+  --popover-foreground: #ffffff;
+  --primary: #ab7743;
+  --primary-foreground: #ffffff;
+  --secondary: #84593d;
+  --secondary-foreground: #ffffff;
+  --muted: #6d3914;
+  --muted-foreground: #d7bda6;
+  --accent: #84593d;
+  --accent-foreground: #ffffff;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #84593d99;
+  --input: #84593d99;
+  --ring: #ab7743;
+  --chart-1: #ab7743;
+  --chart-2: #b7957f;
+  --chart-3: #d7bda6;
+  --chart-4: #84593d;
+  --chart-5: #6d3914;
+  --sidebar: #6d3914;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ab7743;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #84593d;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #84593d99;
+  --sidebar-ring: #ab7743;
+}

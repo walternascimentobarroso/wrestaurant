@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 
 import { FAKE_PRODUCTS } from "../data/fakeProducts";
@@ -28,13 +29,13 @@ export function OrderSummary({
   const itemCount = items.reduce((count, item) => count + item.quantity, 0);
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-2xl border border-zinc-200 bg-white">
-      <div className="shrink-0 border-b border-zinc-200 px-5 py-4">
-        <h2 className="text-lg font-bold text-zinc-900">
+    <div className="flex h-full min-h-0 flex-col rounded-2xl border border-border bg-card">
+      <div className="shrink-0 border-b border-border px-5 py-4">
+        <h2 className="text-lg font-bold text-foreground">
           Pedido — Mesa {tableNumber}
         </h2>
         {items.length > 0 && (
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Toque em um item para remover
           </p>
         )}
@@ -42,7 +43,7 @@ export function OrderSummary({
 
       {items.length === 0 ? (
         <div className="flex flex-1 items-center justify-center px-5 py-8">
-          <p className="text-center text-base text-zinc-400">
+          <p className="text-center text-base text-muted-foreground">
             Toque nos produtos para adicionar ao pedido
           </p>
         </div>
@@ -64,17 +65,17 @@ export function OrderSummary({
                   <button
                     type="button"
                     onClick={() => onRemove(item.productId)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left transition active:scale-[0.98] active:bg-red-50"
+                    className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left transition active:scale-[0.98] active:bg-destructive/10"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-zinc-900">
+                      <p className="truncate font-semibold text-foreground">
                         {product.name}
                       </p>
-                      <p className="text-sm text-zinc-500">
+                      <p className="text-sm text-muted-foreground">
                         {item.quantity}x {formatCurrency(product.price)}
                       </p>
                     </div>
-                    <p className="shrink-0 text-base font-bold text-zinc-900">
+                    <p className="shrink-0 text-base font-bold text-foreground">
                       {formatCurrency(subtotal)}
                     </p>
                   </button>
@@ -83,26 +84,27 @@ export function OrderSummary({
             })}
           </ul>
 
-          <div className="shrink-0 border-t border-zinc-200 px-5 py-4">
-            <div className="flex items-center justify-between text-sm text-zinc-500">
+          <div className="shrink-0 border-t border-border px-5 py-4">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>
                 {itemCount} {itemCount === 1 ? "item" : "itens"}
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-lg font-semibold text-zinc-900">Total</span>
-              <span className="text-2xl font-bold text-zinc-900">
+              <span className="text-lg font-semibold text-foreground">Total</span>
+              <span className="text-2xl font-bold text-foreground">
                 {formatCurrency(total)}
               </span>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="destructive"
               onClick={onClear}
-              className="mt-4 flex min-h-14 w-full items-center justify-center rounded-2xl border-2 border-red-200 text-base font-semibold text-red-600 transition active:scale-[0.98] active:bg-red-50"
+              className="mt-4 h-14 w-full rounded-2xl text-base font-semibold"
             >
               Fechar mesa
-            </button>
+            </Button>
           </div>
         </>
       )}

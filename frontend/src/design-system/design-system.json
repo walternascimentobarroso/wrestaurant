@@ -1,0 +1,40 @@
+{
+  "brand": "Amora Café",
+  "colors": {
+    "primary": {
+      "name": "Caramel",
+      "hex": "#AB7743",
+      "usage": "Logo, botões principais, destaques"
+    },
+    "secondary": {
+      "name": "Coffee",
+      "hex": "#6D3914",
+      "usage": "Títulos, menus, textos importantes"
+    },
+    "accent": {
+      "name": "Mocha",
+      "hex": "#84593D",
+      "usage": "Ícones, hover, elementos secundários"
+    },
+    "background": {
+      "name": "Vanilla",
+      "hex": "#D7BDA6",
+      "usage": "Fundo principal do site"
+    },
+    "surface": {
+      "name": "Almond",
+      "hex": "#B7957F",
+      "usage": "Cards, secções, caixas"
+    },
+    "dark": {
+      "name": "Espresso",
+      "hex": "#4C2B08",
+      "usage": "Footer, menu, áreas premium"
+    },
+    "text": {
+      "primary": "#4C2B08",
+      "secondary": "#6D3914",
+      "light": "#FFFFFF"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import { SettingsButton } from "@/features/settings/components/SettingsButton";
+import { AppHeaderActions } from "@/components/app-header-actions";
+import { brand } from "@/design-system";
 
 import { TableCard } from "./TableCard";
 import { useTableStore } from "../hooks/useTableStore";
@@ -10,26 +11,26 @@ export function TablesPage() {
 
   if (!isLoaded) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-zinc-100">
-        <p className="text-lg text-zinc-500">Carregando mesas...</p>
+      <div className="flex h-dvh items-center justify-center bg-background">
+        <p className="text-lg text-muted-foreground">Carregando mesas...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-zinc-100">
-      <header className="shrink-0 border-b border-zinc-200 bg-white">
+    <div className="flex h-dvh flex-col bg-background">
+      <header className="shrink-0 border-b border-border bg-card shadow-sm">
         <div className="flex items-start justify-between gap-4 px-4 py-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">
-              Restaurant
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+              {brand}
             </p>
-            <h1 className="text-xl font-bold text-zinc-900">Mesas</h1>
-            <p className="mt-1 text-sm text-zinc-600">
+            <h1 className="text-xl font-bold text-foreground">Mesas</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               Selecione uma mesa para adicionar produtos ao pedido.
             </p>
           </div>
-          <SettingsButton />
+          <AppHeaderActions />
         </div>
       </header>
 

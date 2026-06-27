@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { useSettings } from "@/features/settings/hooks/useSettings";
+import { cn } from "@/lib/utils";
 
-import { FAKE_PRODUCTS } from "../data/fakeProducts";
+import {
+  FAKE_PRODUCTS,
+  getCategories,
+  getProductsByCategoryAndSubcategory,
+  getSubcategories,
+} from "../data/fakeProducts";
 import type { TableOrderItem } from "../types";
 
-const CATEGORIES = [...new Set(FAKE_PRODUCTS.map((p) => p.category))];
+const CATEGORIES = getCategories();
 
 interface ProductListProps {
   items: TableOrderItem[];
@@ -16,12 +23,41 @@ interface ProductListProps {
 
 export function ProductList({ items, onAdd }: ProductListProps) {
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
+  const [activeSubcategory, setActiveSubcategory] = useState(
+    getSubcategories(CATEGORIES[0])[0],
+  );
   const { formatCurrency } = useSettings();
 
-  const products = FAKE_PRODUCTS.filter((p) => p.category === activeCategory);
+  const subcategories = getSubcategories(activeCategory);
+  const products = getProductsByCategoryAndSubcategory(
+    activeCategory,
+    activeSubcategory,
+  );
+
+  function handleCategoryChange(category: string) {
+    setActiveCategory(category);
+    setActiveSubcategory(getSubcategories(category)[0]);
+  }
 
   function getQuantity(productId: string): number {
     return items.find((item) => item.productId === productId)?.quantity ?? 0;
+  }
+
+  function countByCategory(category: string): number {
+    return items.reduce((count, item) => {
+      const product = FAKE_PRODUCTS.find((p) => p.id === item.productId);
+      return product?.category === category ? count + item.quantity : count;
+    }, 0);
+  }
+
+  function countBySubcategory(subcategory: string): number {
+    return items.reduce((count, item) => {
+      const product = FAKE_PRODUCTS.find((p) => p.id === item.productId);
+      return product?.category === activeCategory &&
+        product.subcategory === subcategory
+        ? count + item.quantity
+        : count;
+    }, 0);
   }
 
   return (
@@ -29,49 +65,85 @@ export function ProductList({ items, onAdd }: ProductListProps) {
       <div
         role="tablist"
         aria-label="Categorias do cardápio"
-        className="flex shrink-0 gap-2 overflow-x-auto border-b border-zinc-200 pb-1"
+        className="flex shrink-0 gap-2 overflow-x-auto border-b border-border pb-2"
       >
         {CATEGORIES.map((category) => {
           const isActive = category === activeCategory;
-          const categoryCount = items.reduce((count, item) => {
-            const product = FAKE_PRODUCTS.find((p) => p.id === item.productId);
-            return product?.category === category ? count + item.quantity : count;
-          }, 0);
+          const categoryCount = countByCategory(category);
 
           return (
-            <button
+            <Button
               key={category}
               type="button"
               role="tab"
               aria-selected={isActive}
-              onClick={() => setActiveCategory(category)}
-              className={`relative flex min-h-14 shrink-0 items-center gap-2 rounded-2xl px-6 text-base font-semibold transition active:scale-[0.98] ${
-                isActive
-                  ? "bg-amber-500 text-white shadow-sm"
-                  : "bg-white text-zinc-700 ring-1 ring-zinc-200 active:bg-zinc-100"
-              }`}
+              onClick={() => handleCategoryChange(category)}
+              variant={isActive ? "default" : "outline"}
+              className={cn(
+                "h-14 shrink-0 rounded-2xl px-6 text-base font-semibold",
+                !isActive && "bg-card",
+              )}
             >
               {category}
               {categoryCount > 0 && (
                 <span
-                  className={`flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold ${
+                  className={cn(
+                    "flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold",
                     isActive
-                      ? "bg-white/25 text-white"
-                      : "bg-amber-100 text-amber-800"
-                  }`}
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-primary/15 text-primary",
+                  )}
                 >
                   {categoryCount}
                 </span>
               )}
-            </button>
+            </Button>
           );
         })}
       </div>
 
       <div
-        role="tabpanel"
-        className="min-h-0 flex-1 overflow-y-auto pt-4"
+        role="tablist"
+        aria-label="Subcategorias do cardápio"
+        className="flex shrink-0 gap-2 overflow-x-auto py-3"
       >
+        {subcategories.map((subcategory) => {
+          const isActive = subcategory === activeSubcategory;
+          const subcategoryCount = countBySubcategory(subcategory);
+
+          return (
+            <Button
+              key={subcategory}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setActiveSubcategory(subcategory)}
+              variant={isActive ? "default" : "outline"}
+              className={cn(
+                "h-11 shrink-0 rounded-xl px-4 text-sm font-semibold",
+                isActive && "bg-accent text-accent-foreground hover:bg-accent/90",
+                !isActive && "bg-card",
+              )}
+            >
+              {subcategory}
+              {subcategoryCount > 0 && (
+                <span
+                  className={cn(
+                    "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-bold",
+                    isActive
+                      ? "bg-accent-foreground/20 text-accent-foreground"
+                      : "bg-accent/15 text-accent",
+                  )}
+                >
+                  {subcategoryCount}
+                </span>
+              )}
+            </Button>
+          );
+        })}
+      </div>
+
+      <div role="tabpanel" className="min-h-0 flex-1 overflow-y-auto">
         <div className="grid grid-cols-2 gap-3 pb-4 md:grid-cols-3">
           {products.map((product) => {
             const quantity = getQuantity(product.id);
@@ -81,21 +153,22 @@ export function ProductList({ items, onAdd }: ProductListProps) {
                 key={product.id}
                 type="button"
                 onClick={() => onAdd(product.id)}
-                className={`relative flex min-h-[7.5rem] flex-col justify-between rounded-2xl border-2 p-4 text-left transition active:scale-[0.97] ${
+                className={cn(
+                  "relative flex min-h-[7.5rem] flex-col justify-between rounded-2xl border-2 p-4 text-left transition active:scale-[0.97]",
                   quantity > 0
-                    ? "border-amber-400 bg-amber-50"
-                    : "border-zinc-200 bg-white active:border-amber-300 active:bg-amber-50"
-                }`}
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card active:border-primary/50 active:bg-primary/5",
+                )}
               >
                 {quantity > 0 && (
-                  <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-sm font-bold text-white">
+                  <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                     {quantity}
                   </span>
                 )}
-                <p className="pr-8 text-base font-semibold leading-snug text-zinc-900">
+                <p className="pr-8 text-base font-semibold leading-snug text-foreground">
                   {product.name}
                 </p>
-                <p className="mt-2 text-lg font-bold text-amber-700">
+                <p className="mt-2 text-lg font-bold text-primary">
                   {formatCurrency(product.price)}
                 </p>
               </button>

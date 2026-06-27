@@ -3,6 +3,7 @@ export interface Product {
   name: string;
   price: number;
   category: string;
+  subcategory: string;
 }
 
 export interface TableOrderItem {

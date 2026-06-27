@@ -150,6 +150,10 @@ backend-bash: ## Abre bash no container do backend
 frontend-bash: ## Abre sh no container do frontend
 	$(DOCKER_COMPOSE) exec frontend sh
 
+.PHONY: frontend-install
+frontend-install: ## Instala dependências npm no container do frontend
+	$(DOCKER_COMPOSE) exec frontend npm install
+
 .PHONY: frontend-lint
 frontend-lint: ## Executa ESLint no frontend
 	$(DOCKER_COMPOSE) exec frontend npm run lint

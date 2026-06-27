@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { SettingsButton } from "@/features/settings/components/SettingsButton";
+import { AppHeaderActions } from "@/components/app-header-actions";
+import { Button } from "@/components/ui/button";
 
 import { OrderSummary } from "./OrderSummary";
 import { ProductList } from "./ProductList";
@@ -22,22 +23,23 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
 
   if (!isLoaded) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-zinc-100">
-        <p className="text-lg text-zinc-500">Carregando mesa...</p>
+      <div className="flex h-dvh items-center justify-center bg-background">
+        <p className="text-lg text-muted-foreground">Carregando mesa...</p>
       </div>
     );
   }
 
   if (!table) {
     return (
-      <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-zinc-100">
-        <p className="text-lg text-zinc-600">Mesa não encontrada.</p>
-        <Link
-          href="/"
-          className="flex min-h-12 items-center rounded-2xl bg-amber-500 px-6 text-base font-semibold text-white active:scale-[0.98]"
+      <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-background">
+        <p className="text-lg text-muted-foreground">Mesa não encontrada.</p>
+        <Button
+          render={<Link href="/" />}
+          size="lg"
+          className="min-h-12 rounded-2xl px-6"
         >
           Voltar para mesas
-        </Link>
+        </Button>
       </div>
     );
   }
@@ -48,25 +50,26 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-zinc-100">
-      <header className="shrink-0 border-b border-zinc-200 bg-white">
+    <div className="flex h-dvh flex-col bg-background">
+      <header className="shrink-0 border-b border-border bg-card shadow-sm">
         <div className="flex items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-xl text-zinc-700 transition active:scale-95 active:bg-zinc-200"
-              aria-label="Voltar"
+            <Button
+              variant="outline"
+              size="icon-lg"
+              className="size-12 rounded-2xl"
+              render={<Link href="/" aria-label="Voltar" />}
             >
               ←
-            </Link>
+            </Button>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
                 Mesa {table.number}
               </p>
-              <h1 className="text-xl font-bold text-zinc-900">Cardápio</h1>
+              <h1 className="text-xl font-bold text-foreground">Cardápio</h1>
             </div>
           </div>
-          <SettingsButton />
+          <AppHeaderActions />
         </div>
       </header>
 
@@ -78,7 +81,7 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
           />
         </section>
 
-        <aside className="min-h-0 border-t border-zinc-200 p-4 md:col-span-2 md:border-l md:border-t-0">
+        <aside className="min-h-0 border-t border-border p-4 md:col-span-2 md:border-l md:border-t-0">
           <OrderSummary
             items={table.items}
             tableNumber={table.number}

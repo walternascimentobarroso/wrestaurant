@@ -22,10 +22,10 @@ export function TablesPage() {
       <header className="shrink-0 border-b border-border bg-card shadow-sm">
         <div className="flex items-start justify-between gap-4 px-4 py-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+            <p className="font-heading text-xs font-semibold uppercase tracking-wide text-primary">
               {brand}
             </p>
-            <h1 className="text-xl font-bold text-foreground">Mesas</h1>
+            <h1 className="font-heading text-xl font-bold text-foreground">Mesas</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Selecione uma mesa para adicionar produtos ao pedido.
             </p>

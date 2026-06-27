@@ -66,7 +66,7 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">
                 Mesa {table.number}
               </p>
-              <h1 className="text-xl font-bold text-foreground">Cardápio</h1>
+              <h1 className="font-heading text-xl font-bold text-foreground">Cardápio</h1>
             </div>
           </div>
           <AppHeaderActions />

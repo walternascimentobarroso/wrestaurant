@@ -25,7 +25,7 @@ export function TableCard({ table }: TableCardProps) {
           <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             Mesa
           </p>
-          <p className="mt-1 text-3xl font-bold text-foreground">
+          <p className="mt-1 font-heading text-3xl font-bold text-foreground">
             {table.number}
           </p>
         </div>

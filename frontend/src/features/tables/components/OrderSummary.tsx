@@ -31,7 +31,7 @@ export function OrderSummary({
   return (
     <div className="flex h-full min-h-0 flex-col rounded-2xl border border-border bg-card">
       <div className="shrink-0 border-b border-border px-5 py-4">
-        <h2 className="text-lg font-bold text-foreground">
+        <h2 className="font-heading text-lg font-bold text-foreground">
           Pedido — Mesa {tableNumber}
         </h2>
         {items.length > 0 && (
@@ -92,7 +92,7 @@ export function OrderSummary({
             </div>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-lg font-semibold text-foreground">Total</span>
-              <span className="text-2xl font-bold text-foreground">
+              <span className="font-heading text-2xl font-bold text-foreground">
                 {formatCurrency(total)}
               </span>
             </div>

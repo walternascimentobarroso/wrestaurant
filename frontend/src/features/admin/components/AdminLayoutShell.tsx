@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ClipboardList, FolderTree, LayoutGrid, LogOut } from "lucide-react";
+import { ClipboardList, FolderTree, LayoutGrid, LogOut, Package } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { brand } from "@/design-system";
@@ -14,6 +14,7 @@ import { useAdminAuth } from "../hooks/useAdminAuth";
 const ADMIN_NAV_ITEMS = [
   { href: "/admin/mesas", label: "Mesas", icon: LayoutGrid },
   { href: "/admin/categorias", label: "Categorias", icon: FolderTree },
+  { href: "/admin/produtos", label: "Produtos", icon: Package },
   { href: "/admin/relatorios", label: "Relatórios", icon: ClipboardList },
 ] as const;
 

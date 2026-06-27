@@ -154,6 +154,20 @@ frontend-bash: ## Abre sh no container do frontend
 frontend-install: ## Instala dependências npm no container do frontend
 	$(DOCKER_COMPOSE) exec frontend npm install
 
+.PHONY: seed-sales
+seed-sales: ## Popula vendas fake do dia (cole no console do browser)
+	@echo ""
+	@echo "${YELLOW}Seed de vendas fake — relatório/gráfico do dia${NOCOLOR}"
+	@echo ""
+	@echo "1. Abra ${CYAN}http://localhost:$(FRONTEND_PORT)${NOCOLOR}"
+	@echo "2. DevTools → Console (F12)"
+	@echo "3. Cole e execute:"
+	@echo ""
+	@echo "${CYAN}fetch('/scripts/seed-daily-sales.js').then(r=>r.text()).then(eval)${NOCOLOR}"
+	@echo ""
+	@echo "Ou copie o arquivo: ${CYAN}frontend/public/scripts/seed-daily-sales.js${NOCOLOR}"
+	@echo ""
+
 .PHONY: frontend-lint
 frontend-lint: ## Executa ESLint no frontend
 	$(DOCKER_COMPOSE) exec frontend npm run lint

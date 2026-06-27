@@ -1,6 +1,7 @@
 "use client";
 
 import { ClipboardList } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +13,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useSettings } from "@/features/settings/hooks/useSettings";
-import { useSales } from "@/features/sales/hooks/useSales";
+
+import { DailyReportTabs } from "./DailyReportTabs";
+import { DailySalesChart } from "./DailySalesChart";
+import { useSales } from "../hooks/useSales";
 
 const PAYMENT_LABELS = {
   cash: "Dinheiro",
@@ -38,6 +42,7 @@ function formatReportDate(date = new Date()): string {
 export function DailyReportButton() {
   const { formatCurrency } = useSettings();
   const { dailySales, dailyTotal } = useSales();
+  const [view, setView] = useState<"list" | "chart">("list");
 
   return (
     <Dialog>
@@ -65,42 +70,47 @@ export function DailyReportButton() {
               {formatReportDate()}
             </DialogDescription>
           </DialogHeader>
+          <DailyReportTabs view={view} onViewChange={setView} />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-          {dailySales.length === 0 ? (
-            <div className="flex min-h-40 items-center justify-center px-4">
-              <p className="text-center text-muted-foreground">
-                Nenhuma venda registrada hoje.
-              </p>
-            </div>
-          ) : (
-            <ul className="space-y-3">
-              {dailySales.map((sale) => (
-                <li
-                  key={sale.id}
-                  className="rounded-2xl border border-border bg-card p-4 shadow-pressed"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-heading text-lg font-bold text-foreground">
-                        {formatSaleTime(sale.paidAt)}
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Mesa {sale.tableNumber} ·{" "}
-                        {PAYMENT_LABELS[sale.paymentMethod]}
+          {view === "list" ? (
+            dailySales.length === 0 ? (
+              <div className="flex min-h-40 items-center justify-center px-4">
+                <p className="text-center text-muted-foreground">
+                  Nenhuma venda registrada hoje.
+                </p>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {dailySales.map((sale) => (
+                  <li
+                    key={sale.id}
+                    className="rounded-2xl border border-border bg-card p-4 shadow-pressed"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-heading text-lg font-bold text-foreground">
+                          {formatSaleTime(sale.paidAt)}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Mesa {sale.tableNumber} ·{" "}
+                          {PAYMENT_LABELS[sale.paymentMethod]}
+                        </p>
+                      </div>
+                      <p className="shrink-0 font-heading text-lg font-bold text-primary">
+                        {formatCurrency(sale.total)}
                       </p>
                     </div>
-                    <p className="shrink-0 font-heading text-lg font-bold text-primary">
-                      {formatCurrency(sale.total)}
+                    <p className="mt-3 text-sm leading-relaxed text-foreground">
+                      {sale.description}
                     </p>
-                  </div>
-                  <p className="mt-3 text-sm leading-relaxed text-foreground">
-                    {sale.description}
-                  </p>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : (
+            <DailySalesChart sales={dailySales} />
           )}
         </div>
 

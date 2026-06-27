@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { OrderSummary } from "./OrderSummary";
 import { ProductList } from "./ProductList";
-import type { PaymentMethod } from "../types";
+import type { PaymentDetails } from "@/features/sales/types";
 import { useTableStore } from "../hooks/useTableStore";
 
 interface TableDetailPageProps {
@@ -43,8 +43,8 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
     );
   }
 
-  function handleReceive(method: PaymentMethod) {
-    receivePayment(tableId, method);
+  function handleReceive(payment: PaymentDetails) {
+    receivePayment(tableId, payment);
   }
 
   return (

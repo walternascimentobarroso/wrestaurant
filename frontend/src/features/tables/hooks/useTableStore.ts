@@ -11,7 +11,9 @@ import {
   persistTables,
   subscribeTables,
 } from "../services/tableStorage";
-import type { Table, TableOrderItem, TableWithDetails, PaymentMethod } from "../types";
+import { createSaleFromTable, recordSale } from "@/features/sales/services/salesStorage";
+import type { PaymentDetails } from "@/features/sales/types";
+import type { Table, TableOrderItem, TableWithDetails } from "../types";
 
 function enrichTable(table: Table): TableWithDetails {
   return {
@@ -99,13 +101,17 @@ export function useTableStore() {
   );
 
   const receivePayment = useCallback(
-    (tableId: number, paymentMethod: PaymentMethod) => {
-      void paymentMethod;
+    (tableId: number, payment: PaymentDetails) => {
+      const table = tables.find((entry) => entry.id === tableId);
+      if (table && table.items.length > 0) {
+        recordSale(createSaleFromTable(table, payment));
+      }
+
       saveTables(
-        tables.map((table) =>
-          table.id === tableId
-            ? { ...table, status: "free", items: [], openedAt: undefined }
-            : table,
+        tables.map((entry) =>
+          entry.id === tableId
+            ? { ...entry, status: "free", items: [], openedAt: undefined }
+            : entry,
         ),
       );
     },

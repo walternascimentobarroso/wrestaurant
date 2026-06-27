@@ -22,7 +22,11 @@ interface ReceivePaymentDialogProps {
   onOpenChange: (open: boolean) => void;
   tableNumber: number;
   total: number;
-  onConfirm: (method: PaymentMethod) => void;
+  onConfirm: (payment: {
+    method: PaymentMethod;
+    amountReceived: number;
+    change: number;
+  }) => void;
 }
 
 function formatAmountForInput(value: number): string {
@@ -71,7 +75,11 @@ export function ReceivePaymentDialog({
     if (!method || isInsufficientCash) {
       return;
     }
-    onConfirm(method);
+    onConfirm({
+      method,
+      amountReceived: received,
+      change,
+    });
     setMethod(null);
     setAmountReceived(formatAmountForInput(total));
     onOpenChange(false);

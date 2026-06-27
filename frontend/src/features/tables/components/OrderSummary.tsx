@@ -5,15 +5,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 
+import type { PaymentDetails } from "@/features/sales/types";
+
 import { ReceivePaymentDialog } from "./ReceivePaymentDialog";
 import { FAKE_PRODUCTS } from "../data/fakeProducts";
-import type { PaymentMethod, TableOrderItem } from "../types";
+import type { TableOrderItem } from "../types";
 
 interface OrderSummaryProps {
   items: TableOrderItem[];
   tableNumber: number;
   onRemove: (productId: string) => void;
-  onReceive: (method: PaymentMethod) => void;
+  onReceive: (payment: PaymentDetails) => void;
 }
 
 export function OrderSummary({

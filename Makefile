@@ -154,6 +154,22 @@ frontend-bash: ## Abre sh no container do frontend
 frontend-install: ## Instala dependências npm no container do frontend
 	$(DOCKER_COMPOSE) exec frontend npm install
 
+.PHONY: seed-sales-week
+seed-sales-week: ## Popula vendas fake dos dias passados da semana (cole no console)
+	@echo ""
+	@echo "${YELLOW}Seed de vendas fake — dias passados da semana${NOCOLOR}"
+	@echo ""
+	@echo "1. Abra ${CYAN}http://localhost:$(FRONTEND_PORT)${NOCOLOR}"
+	@echo "2. DevTools → Console (F12)"
+	@echo "3. Cole e execute:"
+	@echo ""
+	@echo "${CYAN}fetch('/scripts/seed-weekly-sales.js').then(r=>r.text()).then(eval)${NOCOLOR}"
+	@echo ""
+	@echo "Ou copie o arquivo: ${CYAN}frontend/public/scripts/seed-weekly-sales.js${NOCOLOR}"
+	@echo ""
+	@echo "${YELLOW}Nota:${NOCOLOR} os dias sem vendas também são preenchidos automaticamente ao abrir Relatórios."
+	@echo ""
+
 .PHONY: seed-sales
 seed-sales: ## Popula vendas fake do dia (cole no console do browser)
 	@echo ""

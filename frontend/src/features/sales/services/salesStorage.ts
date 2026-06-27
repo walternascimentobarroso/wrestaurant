@@ -2,6 +2,7 @@ import { FAKE_PRODUCTS } from "@/features/tables/data/fakeProducts";
 import { calculateTableTotal } from "@/features/tables/services/tableStorage";
 import type { Table } from "@/features/tables/types";
 
+import { buildWeeklyDemoSales } from "../data/seedWeeklySales";
 import type { PaymentDetails, Sale, SaleItem } from "../types";
 
 const STORAGE_KEY = "restaurant-sales";
@@ -62,6 +63,31 @@ export function getSalesSnapshot(): Sale[] {
 
 export function getSalesServerSnapshot(): Sale[] {
   return SERVER_SNAPSHOT;
+}
+
+export function persistSales(sales: Sale[]): void {
+  const serialized = JSON.stringify(sales);
+  localStorage.setItem(STORAGE_KEY, serialized);
+  cachedClientRaw = serialized;
+  cachedClientSnapshot = sales;
+  window.dispatchEvent(new Event(STORAGE_EVENT));
+}
+
+let weeklyDemoEnsured = false;
+
+export function ensureWeeklyDemoSales(): void {
+  if (typeof window === "undefined" || weeklyDemoEnsured) {
+    return;
+  }
+
+  weeklyDemoEnsured = true;
+
+  const existing = readSalesFromStorage();
+  const nextSales = buildWeeklyDemoSales(existing);
+
+  if (nextSales.length !== existing.length) {
+    persistSales(nextSales);
+  }
 }
 
 function buildSaleItems(table: Table): SaleItem[] {

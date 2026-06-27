@@ -1,7 +1,11 @@
 "use client";
 
-import { Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Settings, ShieldCheck } from "lucide-react";
 
+import { AdminPasswordDialog } from "@/features/admin/components/AdminPasswordDialog";
+import { useAdminAuth } from "@/features/admin/hooks/useAdminAuth";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,14 +22,28 @@ import { useSettings } from "../hooks/useSettings";
 import type { CurrencyCode } from "../types";
 
 export function SettingsButton() {
+  const router = useRouter();
   const { currency, setCurrency } = useSettings();
+  const { login } = useAdminAuth();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
 
   function handleSelect(code: CurrencyCode) {
     setCurrency(code);
   }
 
+  function handleOpenAdmin() {
+    setSettingsOpen(false);
+    setAdminDialogOpen(true);
+  }
+
+  function handleAdminSuccess() {
+    router.push("/admin/mesas");
+  }
+
   return (
-    <Dialog>
+    <>
+    <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
       <DialogTrigger
         render={
           <Button
@@ -69,7 +87,32 @@ export function SettingsButton() {
             );
           })}
         </div>
+
+        <div className="border-t border-border pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleOpenAdmin}
+            className="h-auto min-h-14 w-full justify-start gap-3 rounded-2xl border-2 px-5 py-4 text-left"
+          >
+            <ShieldCheck className="size-5 shrink-0 text-primary" />
+            <span>
+              <span className="block text-base font-semibold">Área administrativa</span>
+              <span className="block text-sm font-normal text-muted-foreground">
+                Cadastrar mesas e gerenciar o salão
+              </span>
+            </span>
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
+
+    <AdminPasswordDialog
+      open={adminDialogOpen}
+      onOpenChange={setAdminDialogOpen}
+      onLogin={login}
+      onSuccess={handleAdminSuccess}
+    />
+    </>
   );
 }

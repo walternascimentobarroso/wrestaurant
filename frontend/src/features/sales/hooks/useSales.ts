@@ -1,15 +1,21 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 
 import {
+  ensureWeeklyDemoSales,
   getSalesServerSnapshot,
   getSalesSnapshot,
   isSameLocalDay,
   subscribeSales,
 } from "../services/salesStorage";
+import { groupSalesByDay } from "../utils/groupSalesByDay";
 
 export function useSales() {
+  useEffect(() => {
+    ensureWeeklyDemoSales();
+  }, []);
+
   const sales = useSyncExternalStore(
     subscribeSales,
     getSalesSnapshot,
@@ -31,8 +37,19 @@ export function useSales() {
     [dailySales],
   );
 
+  const salesByDay = useMemo(() => groupSalesByDay(sales), [sales]);
+
+  const allTimeTotal = useMemo(
+    () => sales.reduce((sum, sale) => sum + sale.total, 0),
+    [sales],
+  );
+
   return {
     dailySales,
     dailyTotal,
+    dailySalesCount: dailySales.length,
+    salesByDay,
+    allTimeTotal,
+    allSalesCount: sales.length,
   };
 }

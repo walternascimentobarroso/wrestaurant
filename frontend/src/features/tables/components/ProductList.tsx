@@ -1,5 +1,6 @@
 "use client";
 
+import { Ban } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { useSettings } from "@/features/settings/hooks/useSettings";
 import type { StockActionResult } from "@/features/stock/types";
 import { isLowStock, isOutOfStock } from "@/features/stock/utils/productStock";
 import { cn } from "@/lib/utils";
+import type { Product } from "@/features/tables/types";
 
 import type { TableOrderItem } from "../types";
 
@@ -203,54 +205,111 @@ export function ProductList({ items, onAdd }: ProductListProps) {
             {categoryProducts.map((product) => {
               const quantity = getQuantity(product.id);
               const outOfStock = isOutOfStock(product);
-              const lowStock = isLowStock(product);
+              const lowStock = isLowStock(product) && !outOfStock;
               const orderQuantity = quantity;
               const cannotAdd =
                 outOfStock ||
                 (product.trackStock && product.stockQuantity <= orderQuantity);
 
               return (
-                <button
+                <ProductCard
                   key={product.id}
-                  type="button"
-                  disabled={cannotAdd}
-                  onClick={() => handleAddProduct(product.id)}
-                  className={cn(
-                    "relative flex min-h-[7.5rem] flex-col justify-between rounded-2xl border-2 p-4 text-left shadow-elevated transition",
-                    cannotAdd
-                      ? "cursor-not-allowed border-border bg-muted/40 opacity-70"
-                      : "hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:scale-[0.98] active:shadow-pressed",
-                    quantity > 0 && !cannotAdd
-                      ? "border-primary bg-primary/10"
-                      : !cannotAdd && "border-border bg-card",
-                  )}
-                >
-                  {outOfStock ? (
-                    <span className="absolute left-3 top-3 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-semibold text-destructive">
-                      Esgotado
-                    </span>
-                  ) : lowStock ? (
-                    <span className="absolute left-3 top-3 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                      Restam {product.stockQuantity}
-                    </span>
-                  ) : null}
-                  {quantity > 0 && (
-                    <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                      {quantity}
-                    </span>
-                  )}
-                  <p className="pr-8 text-base font-semibold leading-snug text-foreground">
-                    {product.name}
-                  </p>
-                  <p className="mt-2 text-lg font-bold text-primary">
-                    {formatCurrency(product.price)}
-                  </p>
-                </button>
+                  product={product}
+                  quantity={quantity}
+                  outOfStock={outOfStock}
+                  lowStock={lowStock}
+                  cannotAdd={cannotAdd}
+                  formatCurrency={formatCurrency}
+                  onAdd={() => handleAddProduct(product.id)}
+                />
               );
             })}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+interface ProductCardProps {
+  product: Product;
+  quantity: number;
+  outOfStock: boolean;
+  lowStock: boolean;
+  cannotAdd: boolean;
+  formatCurrency: (value: number) => string;
+  onAdd: () => void;
+}
+
+function ProductCard({
+  product,
+  quantity,
+  outOfStock,
+  lowStock,
+  cannotAdd,
+  formatCurrency,
+  onAdd,
+}: ProductCardProps) {
+  return (
+    <button
+      type="button"
+      disabled={cannotAdd}
+      onClick={onAdd}
+      aria-label={
+        lowStock
+          ? `${product.name}, estoque baixo, restam ${product.stockQuantity}`
+          : outOfStock
+            ? `${product.name}, esgotado`
+            : product.name
+      }
+      className={cn(
+        "relative flex min-h-[7.5rem] flex-col justify-between rounded-2xl border-2 p-4 text-left shadow-elevated transition",
+        outOfStock &&
+          "cursor-not-allowed border-destructive/40 bg-muted/50 opacity-80",
+        !outOfStock &&
+          lowStock &&
+          "border-amber-500/70 bg-card hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:scale-[0.98] active:shadow-pressed",
+        !outOfStock &&
+          !lowStock &&
+          !cannotAdd &&
+          "hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:scale-[0.98] active:shadow-pressed",
+        !outOfStock &&
+          !lowStock &&
+          quantity > 0 &&
+          "border-primary bg-primary/10",
+        !outOfStock && !lowStock && quantity === 0 && "border-border bg-card",
+      )}
+    >
+      {lowStock ? (
+        <span className="absolute left-3 top-3 rounded-lg bg-amber-500 px-2 py-0.5 text-xs font-bold text-white shadow-sm">
+          Restam {product.stockQuantity}
+        </span>
+      ) : null}
+
+      {outOfStock ? (
+        <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-lg bg-destructive/90 px-2 py-0.5 text-xs font-bold text-white shadow-sm">
+          <Ban className="size-3" aria-hidden />
+          Esgotado
+        </span>
+      ) : null}
+
+      {quantity > 0 && !outOfStock ? (
+        <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+          {quantity}
+        </span>
+      ) : null}
+
+      <p
+        className={cn(
+          "text-base font-semibold leading-snug text-foreground",
+          (lowStock || outOfStock) && "pt-7",
+          quantity > 0 && !outOfStock && "pr-8",
+        )}
+      >
+        {product.name}
+      </p>
+
+      <p className="mt-2 text-lg font-bold text-primary">{formatCurrency(product.price)}</p>
+    </button>
   );
 }

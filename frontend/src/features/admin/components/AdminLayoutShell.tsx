@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ClipboardList, FolderTree, LayoutGrid, LogOut, Package, Warehouse } from "lucide-react";
+import {
+  ClipboardList,
+  FolderTree,
+  LayoutDashboard,
+  LayoutGrid,
+  LogOut,
+  Package,
+  Warehouse,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { brand } from "@/design-system";
@@ -12,6 +20,7 @@ import { AdminPasswordDialog } from "./AdminPasswordDialog";
 import { useAdminAuth } from "../hooks/useAdminAuth";
 
 const ADMIN_NAV_ITEMS = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/mesas", label: "Mesas", icon: LayoutGrid },
   { href: "/admin/categorias", label: "Categorias", icon: FolderTree },
   { href: "/admin/produtos", label: "Produtos", icon: Package },
@@ -73,9 +82,11 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
         </div>
 
         <nav className="flex-1 space-y-1 p-3">
-          {ADMIN_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          {ADMIN_NAV_ITEMS.map(({ href, label, icon: Icon, ...item }) => {
             const isActive =
-              pathname === href || pathname.startsWith(`${href}/`);
+              "exact" in item && item.exact
+                ? pathname === href
+                : pathname === href || pathname.startsWith(`${href}/`);
 
             return (
               <Link

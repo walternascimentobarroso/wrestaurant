@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { AdminDashboardPage } from "@/features/admin/components/AdminDashboardPage";
 
 export default function AdminPage() {
-  redirect("/admin/mesas");
+  return <AdminDashboardPage />;
 }

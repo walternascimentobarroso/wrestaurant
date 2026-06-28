@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Package, Plus, Minus } from "lucide-react";
+import { Minus, Package, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,9 +13,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PriceComparisonAlert } from "@/features/purchases/components/PurchaseHistoryDialog";
+import { usePurchases } from "@/features/purchases/hooks/usePurchases";
+import { useSettings } from "@/features/settings/hooks/useSettings";
 import { useStock } from "@/features/stock/hooks/useStock";
 import type { StockFilter } from "@/features/stock/types";
 import { isLowStock, isOutOfStock } from "@/features/stock/utils/productStock";
+import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
 import type { Product } from "@/features/tables/types";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +31,18 @@ const FILTER_OPTIONS: { value: StockFilter; label: string }[] = [
   { value: "out", label: "Esgotados" },
 ];
 
+function getTodayDateInput(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function AdminStockPage() {
+  const { formatCurrency } = useSettings();
+  const { suppliers } = useSuppliers();
+  const { recordProductPurchase, comparePriceForProduct } = usePurchases();
   const { trackedProducts, lowStockCount, outOfStockCount, getFilteredProducts, adjustStock } =
     useStock();
 
@@ -37,6 +52,10 @@ export function AdminStockPage() {
   const [adjustMode, setAdjustMode] = useState<"restock" | "adjustment">("restock");
   const [adjustQuantity, setAdjustQuantity] = useState("1");
   const [adjustReason, setAdjustReason] = useState("");
+  const [supplierId, setSupplierId] = useState("");
+  const [unitCost, setUnitCost] = useState("");
+  const [purchasedAt, setPurchasedAt] = useState(getTodayDateInput());
+  const [purchaseNotes, setPurchaseNotes] = useState("");
   const [adjustError, setAdjustError] = useState("");
 
   const filteredProducts = useMemo(
@@ -57,17 +76,52 @@ export function AdminStockPage() {
     filteredProducts.length === 0 ? 0 : (effectivePage - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(effectivePage * PAGE_SIZE, filteredProducts.length);
 
+  const parsedUnitCost = Number.parseFloat(unitCost.replace(",", "."));
+  const parsedQuantity = Number.parseInt(adjustQuantity, 10);
+
+  const priceComparison = useMemo(() => {
+    if (!adjustTarget || adjustMode !== "restock" || !Number.isFinite(parsedUnitCost)) {
+      return null;
+    }
+
+    return comparePriceForProduct(adjustTarget.id, parsedUnitCost);
+  }, [adjustTarget, adjustMode, parsedUnitCost, comparePriceForProduct]);
+
+  const purchaseTotal = useMemo(() => {
+    if (!Number.isFinite(parsedUnitCost) || !Number.isFinite(parsedQuantity)) {
+      return null;
+    }
+
+    return parsedUnitCost * parsedQuantity;
+  }, [parsedUnitCost, parsedQuantity]);
+
   function handleFilterChange(nextFilter: StockFilter) {
     setFilter(nextFilter);
     setCurrentPage(1);
   }
 
+  function resetAdjustForm() {
+    setAdjustQuantity("1");
+    setAdjustReason("");
+    setSupplierId(suppliers[0]?.id ?? "");
+    setUnitCost("");
+    setPurchasedAt(getTodayDateInput());
+    setPurchaseNotes("");
+    setAdjustError("");
+  }
+
   function openAdjust(product: Product, mode: "restock" | "adjustment") {
     setAdjustTarget(product);
     setAdjustMode(mode);
-    setAdjustQuantity("1");
-    setAdjustReason("");
-    setAdjustError("");
+    resetAdjustForm();
+
+    if (mode === "restock" && product.preferredSupplierId) {
+      setSupplierId(product.preferredSupplierId);
+    }
+
+    if (mode === "restock" && product.lastPurchaseCost !== null && product.lastPurchaseCost !== undefined) {
+      setUnitCost(String(product.lastPurchaseCost));
+    }
   }
 
   function handleAdjustSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -82,18 +136,41 @@ export function AdminStockPage() {
       return;
     }
 
-    const delta = adjustMode === "restock" ? quantity : -quantity;
-    const result = adjustStock(adjustTarget.id, delta, adjustMode, adjustReason);
+    if (adjustMode === "restock") {
+      const cost = Number.parseFloat(unitCost.replace(",", "."));
+      if (!Number.isFinite(cost) || cost < 0) {
+        setAdjustError("Informe um preço de compra válido.");
+        return;
+      }
 
-    if (!result.ok) {
-      setAdjustError(result.error ?? "Não foi possível ajustar o estoque.");
-      return;
+      if (!supplierId) {
+        setAdjustError("Selecione um fornecedor.");
+        return;
+      }
+
+      const result = recordProductPurchase({
+        productId: adjustTarget.id,
+        supplierId,
+        unitCost: cost,
+        quantity,
+        purchasedAt,
+        notes: purchaseNotes || undefined,
+      });
+
+      if (!result.ok) {
+        setAdjustError(result.error ?? "Não foi possível registrar a compra.");
+        return;
+      }
+    } else {
+      const result = adjustStock(adjustTarget.id, -quantity, "adjustment", adjustReason);
+      if (!result.ok) {
+        setAdjustError(result.error ?? "Não foi possível ajustar o estoque.");
+        return;
+      }
     }
 
     setAdjustTarget(null);
-    setAdjustQuantity("1");
-    setAdjustReason("");
-    setAdjustError("");
+    resetAdjustForm();
   }
 
   return (
@@ -155,6 +232,7 @@ export function AdminStockPage() {
                   <th className="px-4 py-3 font-medium">Produto</th>
                   <th className="px-4 py-3 font-medium">Categoria</th>
                   <th className="px-4 py-3 font-medium">Atual</th>
+                  <th className="px-4 py-3 font-medium">Custo</th>
                   <th className="px-4 py-3 font-medium">Mínimo</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 text-right font-medium">Ações</th>
@@ -174,6 +252,11 @@ export function AdminStockPage() {
                     <td className="px-4 py-3 text-muted-foreground">{product.category}</td>
                     <td className="px-4 py-3 font-semibold text-foreground">
                       {product.stockQuantity}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {product.lastPurchaseCost !== null && product.lastPurchaseCost !== undefined
+                        ? formatCurrency(product.lastPurchaseCost)
+                        : "—"}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{product.minStock}</td>
                     <td className="px-4 py-3">
@@ -273,7 +356,7 @@ export function AdminStockPage() {
         <DialogContent className="max-w-md rounded-3xl p-6 sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              {adjustMode === "restock" ? "Entrada de estoque" : "Saída de estoque"}
+              {adjustMode === "restock" ? "Registrar compra" : "Saída de estoque"}
             </DialogTitle>
             <DialogDescription>
               {adjustTarget
@@ -301,23 +384,116 @@ export function AdminStockPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="adjust-reason" className="text-sm font-medium">
-                Motivo
-              </label>
-              <Input
-                id="adjust-reason"
-                value={adjustReason}
-                onChange={(event) => {
-                  setAdjustReason(event.target.value);
-                  setAdjustError("");
-                }}
-                className="h-11 rounded-xl px-3"
-                placeholder={
-                  adjustMode === "restock" ? "Ex.: Compra do fornecedor" : "Ex.: Perda ou quebra"
-                }
-              />
-            </div>
+            {adjustMode === "restock" ? (
+              <>
+                <div className="space-y-2">
+                  <label htmlFor="purchase-supplier" className="text-sm font-medium">
+                    Fornecedor
+                  </label>
+                  {suppliers.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
+                      Cadastre um fornecedor antes de registrar compras.
+                    </p>
+                  ) : (
+                    <select
+                      id="purchase-supplier"
+                      value={supplierId}
+                      onChange={(event) => {
+                        setSupplierId(event.target.value);
+                        setAdjustError("");
+                      }}
+                      className="h-11 w-full rounded-xl border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                    >
+                      {suppliers.map((supplier) => (
+                        <option key={supplier.id} value={supplier.id}>
+                          {supplier.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label htmlFor="purchase-unit-cost" className="text-sm font-medium">
+                      Preço unitário de compra
+                    </label>
+                    <Input
+                      id="purchase-unit-cost"
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={unitCost}
+                      onChange={(event) => {
+                        setUnitCost(event.target.value);
+                        setAdjustError("");
+                      }}
+                      className="h-11 rounded-xl px-3"
+                      placeholder="0,00"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="purchase-date" className="text-sm font-medium">
+                      Data da compra
+                    </label>
+                    <Input
+                      id="purchase-date"
+                      type="date"
+                      value={purchasedAt}
+                      onChange={(event) => {
+                        setPurchasedAt(event.target.value);
+                        setAdjustError("");
+                      }}
+                      className="h-11 rounded-xl px-3"
+                    />
+                  </div>
+                </div>
+
+                <PriceComparisonAlert comparison={priceComparison} formatCurrency={formatCurrency} />
+
+                {purchaseTotal !== null ? (
+                  <p className="rounded-xl border border-border bg-muted/30 px-3 py-2 text-sm">
+                    Total da compra:{" "}
+                    <span className="font-semibold text-foreground">
+                      {formatCurrency(purchaseTotal)}
+                    </span>
+                  </p>
+                ) : null}
+
+                <div className="space-y-2">
+                  <label htmlFor="purchase-notes" className="text-sm font-medium">
+                    Observações (opcional)
+                  </label>
+                  <Input
+                    id="purchase-notes"
+                    value={purchaseNotes}
+                    onChange={(event) => {
+                      setPurchaseNotes(event.target.value);
+                      setAdjustError("");
+                    }}
+                    className="h-11 rounded-xl px-3"
+                    placeholder="Ex.: Promoção fim de semana"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <label htmlFor="adjust-reason" className="text-sm font-medium">
+                  Motivo
+                </label>
+                <Input
+                  id="adjust-reason"
+                  value={adjustReason}
+                  onChange={(event) => {
+                    setAdjustReason(event.target.value);
+                    setAdjustError("");
+                  }}
+                  className="h-11 rounded-xl px-3"
+                  placeholder="Ex.: Perda ou quebra"
+                />
+              </div>
+            )}
 
             {adjustError ? <p className="text-sm text-destructive">{adjustError}</p> : null}
 
@@ -330,8 +506,12 @@ export function AdminStockPage() {
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="rounded-xl">
-                Confirmar
+              <Button
+                type="submit"
+                className="rounded-xl"
+                disabled={adjustMode === "restock" && suppliers.length === 0}
+              >
+                {adjustMode === "restock" ? "Registrar compra" : "Confirmar saída"}
               </Button>
             </DialogFooter>
           </form>

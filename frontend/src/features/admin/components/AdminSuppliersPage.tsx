@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Building2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Building2, History, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { PurchaseHistoryDialog } from "@/features/purchases/components/PurchaseHistoryDialog";
+import { usePurchases } from "@/features/purchases/hooks/usePurchases";
+import { useSettings } from "@/features/settings/hooks/useSettings";
 import { countPayablesBySupplier } from "@/features/suppliers/services/supplierService";
 import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
 import type { Supplier } from "@/features/suppliers/types";
@@ -46,6 +49,8 @@ function supplierToForm(supplier: Supplier): SupplierFormState {
 }
 
 export function AdminSuppliersPage() {
+  const { formatCurrency } = useSettings();
+  const { getPurchasesForSupplier, countBySupplier, totalPurchases } = usePurchases();
   const { suppliers, createSupplier, updateSupplier, deleteSupplier } = useSuppliers();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,6 +58,8 @@ export function AdminSuppliersPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [historySupplier, setHistorySupplier] = useState<Supplier | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [form, setForm] = useState<SupplierFormState>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
 
@@ -108,6 +115,16 @@ export function AdminSuppliersPage() {
     setFormOpen(true);
   }
 
+  function openSupplierHistory(supplier: Supplier) {
+    setHistorySupplier(supplier);
+    window.setTimeout(() => setHistoryOpen(true), 0);
+  }
+
+  function closeSupplierHistory() {
+    setHistoryOpen(false);
+    setHistorySupplier(null);
+  }
+
   function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -155,7 +172,7 @@ export function AdminSuppliersPage() {
           <div>
             <h2 className="font-heading text-xl font-bold text-foreground">Fornecedores</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cadastre fornecedores para vincular às contas a pagar
+              Cadastre fornecedores e acompanhe o histórico de compras
             </p>
           </div>
           <Button type="button" className="rounded-xl" onClick={openCreateForm}>
@@ -166,7 +183,7 @@ export function AdminSuppliersPage() {
       </header>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-border bg-card p-4 shadow-elevated">
             <p className="text-sm text-muted-foreground">Total cadastrado</p>
             <p className="mt-1 font-heading text-2xl font-bold text-foreground">
@@ -177,6 +194,12 @@ export function AdminSuppliersPage() {
             <p className="text-sm text-muted-foreground">Com contas vinculadas</p>
             <p className="mt-1 font-heading text-2xl font-bold text-primary">
               {suppliers.filter((supplier) => countPayablesBySupplier(supplier.id) > 0).length}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-elevated">
+            <p className="text-sm text-muted-foreground">Compras registradas</p>
+            <p className="mt-1 font-heading text-2xl font-bold text-emerald-600">
+              {totalPurchases}
             </p>
           </div>
         </div>
@@ -216,12 +239,14 @@ export function AdminSuppliersPage() {
                   <th className="px-4 py-3 font-medium">E-mail</th>
                   <th className="px-4 py-3 font-medium">Telefone</th>
                   <th className="px-4 py-3 font-medium">Contas</th>
+                  <th className="px-4 py-3 font-medium">Compras</th>
                   <th className="px-4 py-3 text-right font-medium">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedSuppliers.map((supplier) => {
                   const linkedPayables = countPayablesBySupplier(supplier.id);
+                  const purchaseCount = countBySupplier(supplier.id);
 
                   return (
                     <tr key={supplier.id} className="border-b border-border last:border-0">
@@ -239,8 +264,23 @@ export function AdminSuppliersPage() {
                       <td className="px-4 py-3 text-muted-foreground">{supplier.email ?? "—"}</td>
                       <td className="px-4 py-3 text-muted-foreground">{supplier.phone ?? "—"}</td>
                       <td className="px-4 py-3 font-semibold text-foreground">{linkedPayables}</td>
+                      <td className="px-4 py-3 font-semibold text-foreground">{purchaseCount}</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="rounded-lg"
+                            aria-label={`Histórico de compras de ${supplier.name}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openSupplierHistory(supplier);
+                            }}
+                            disabled={purchaseCount === 0}
+                          >
+                            <History className="size-3.5" />
+                          </Button>
                           <Button
                             type="button"
                             variant="outline"
@@ -307,6 +347,19 @@ export function AdminSuppliersPage() {
           </div>
         )}
       </div>
+
+      <PurchaseHistoryDialog
+        open={historyOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeSupplierHistory();
+          }
+        }}
+        title={historySupplier ? `Compras — ${historySupplier.name}` : "Histórico de compras"}
+        description="Produtos comprados deste fornecedor."
+        records={historySupplier ? getPurchasesForSupplier(historySupplier.id) : []}
+        formatCurrency={formatCurrency}
+      />
 
       <Dialog
         open={formOpen}

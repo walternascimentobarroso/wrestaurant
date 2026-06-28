@@ -9,6 +9,9 @@ export interface StockMovement {
   quantityAfter: number;
   referenceId?: string;
   reason?: string;
+  supplierId?: string;
+  unitCost?: number;
+  purchaseRecordId?: string;
   createdAt: string;
 }
 

@@ -9,6 +9,8 @@ export function normalizeProduct(product: Product): Product {
     trackStock: product.trackStock ?? true,
     stockQuantity: product.stockQuantity ?? DEFAULT_STOCK_QUANTITY,
     minStock: product.minStock ?? DEFAULT_MIN_STOCK,
+    lastPurchaseCost: product.lastPurchaseCost ?? null,
+    preferredSupplierId: product.preferredSupplierId ?? null,
   };
 }
 

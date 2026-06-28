@@ -50,4 +50,16 @@ export const SEED_SUPPLIERS: Supplier[] = [
     phone: "808 280 280",
     createdAt: "2026-03-01T08:00:00.000Z",
   },
+  {
+    id: "supplier-mercado",
+    name: "Mercado Local",
+    notes: "Compras de bebidas e mercearia",
+    createdAt: "2026-03-15T08:00:00.000Z",
+  },
+  {
+    id: "supplier-socorama",
+    name: "Socorama",
+    notes: "Distribuidor de bebidas",
+    createdAt: "2026-03-15T08:00:00.000Z",
+  },
 ];

@@ -23,6 +23,8 @@ export interface Product {
   trackStock: boolean;
   stockQuantity: number;
   minStock: number;
+  lastPurchaseCost?: number | null;
+  preferredSupplierId?: string | null;
 }
 
 export interface TableOrderItem {

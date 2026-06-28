@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Package, Pencil, Plus, Trash2 } from "lucide-react";
+import { History, Package, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +16,16 @@ import { Input } from "@/components/ui/input";
 import { useMenuCatalog } from "@/features/menu/hooks/useMenuCatalog";
 import { useProductAdmin } from "@/features/menu/hooks/useProductAdmin";
 import { getSubcategoryNames } from "@/features/menu/services/menuCatalogStorage";
+import { PurchaseHistoryDialog } from "@/features/purchases/components/PurchaseHistoryDialog";
+import { usePurchases } from "@/features/purchases/hooks/usePurchases";
+import {
+  calculateProductMargin,
+  getMarginColorClass,
+} from "@/features/purchases/utils/margin";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 import { isLowStock, isOutOfStock } from "@/features/stock/utils/productStock";
+import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
+import { getSupplierName } from "@/features/suppliers/services/supplierService";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/features/tables/types";
 
@@ -46,6 +54,8 @@ const PAGE_SIZE = 10;
 export function AdminProductsPage() {
   const { formatCurrency } = useSettings();
   const { categories } = useMenuCatalog();
+  const { suppliers } = useSuppliers();
+  const { getHistoryForProduct, getInsightsForProduct } = usePurchases();
   const { products, createProduct, updateProduct, deleteProduct } = useProductAdmin();
 
   const categoryNames = categories.map((category) => category.name);
@@ -53,6 +63,8 @@ export function AdminProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
@@ -85,6 +97,16 @@ export function AdminProductsPage() {
   function handleFilterChange(category: string) {
     setFilterCategory(category);
     setCurrentPage(1);
+  }
+
+  function openPurchaseHistory(product: Product) {
+    setHistoryProduct(product);
+    window.setTimeout(() => setHistoryOpen(true), 0);
+  }
+
+  function closePurchaseHistory() {
+    setHistoryOpen(false);
+    setHistoryProduct(null);
   }
 
   function getDefaultCategory(): string {
@@ -253,12 +275,19 @@ export function AdminProductsPage() {
                   <th className="px-4 py-3 font-medium">Categoria</th>
                   <th className="px-4 py-3 font-medium">Subcategoria</th>
                   <th className="px-4 py-3 font-medium">Estoque</th>
-                  <th className="px-4 py-3 font-medium">Preço</th>
+                  <th className="px-4 py-3 font-medium">Venda</th>
+                  <th className="px-4 py-3 font-medium">Custo</th>
+                  <th className="px-4 py-3 font-medium">Margem</th>
+                  <th className="px-4 py-3 font-medium">Fornecedor</th>
                   <th className="px-4 py-3 text-right font-medium">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedProducts.map((product) => (
+                {paginatedProducts.map((product) => {
+                  const margin = calculateProductMargin(product);
+                  const supplierName = getSupplierName(suppliers, product.preferredSupplierId ?? undefined);
+
+                  return (
                   <tr key={product.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -293,8 +322,43 @@ export function AdminProductsPage() {
                     <td className="px-4 py-3 font-semibold text-primary">
                       {formatCurrency(product.price)}
                     </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {product.lastPurchaseCost !== null && product.lastPurchaseCost !== undefined
+                        ? formatCurrency(product.lastPurchaseCost)
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {margin.amount !== null && margin.percent !== null ? (
+                        <div className="space-y-0.5">
+                          <span className={cn("font-semibold", getMarginColorClass(margin))}>
+                            {formatCurrency(margin.amount)}
+                          </span>
+                          <span className={cn("block text-xs", getMarginColorClass(margin))}>
+                            {margin.percent.toFixed(1)}%
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Sem custo</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {supplierName ?? "—"}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon-sm"
+                          className="rounded-lg"
+                          aria-label={`Histórico de compras de ${product.name}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openPurchaseHistory(product);
+                          }}
+                        >
+                          <History className="size-3.5" />
+                        </Button>
                         <Button
                           type="button"
                           variant="outline"
@@ -321,7 +385,8 @@ export function AdminProductsPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
 
@@ -399,7 +464,7 @@ export function AdminProductsPage() {
 
             <div className="space-y-2">
               <label htmlFor="product-price" className="text-sm font-medium">
-                Preço
+                Preço de venda
               </label>
               <Input
                 id="product-price"
@@ -415,6 +480,33 @@ export function AdminProductsPage() {
                 placeholder="0,00"
               />
             </div>
+
+            {editingProduct ? (
+              <div className="rounded-2xl border border-border bg-muted/30 p-4 text-sm">
+                <p className="font-medium text-foreground">Custo e fornecedor</p>
+                <p className="mt-1 text-muted-foreground">
+                  Definidos automaticamente ao registrar compras no estoque.
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <span className="text-muted-foreground">Último custo: </span>
+                    <span className="font-medium text-foreground">
+                      {editingProduct.lastPurchaseCost !== null &&
+                      editingProduct.lastPurchaseCost !== undefined
+                        ? formatCurrency(editingProduct.lastPurchaseCost)
+                        : "—"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Fornecedor: </span>
+                    <span className="font-medium text-foreground">
+                      {getSupplierName(suppliers, editingProduct.preferredSupplierId ?? undefined) ??
+                        "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <div className="space-y-3 rounded-2xl border border-border p-4">
               <label className="flex items-center gap-3 text-sm font-medium">
@@ -547,6 +639,20 @@ export function AdminProductsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <PurchaseHistoryDialog
+        open={historyOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closePurchaseHistory();
+          }
+        }}
+        title={historyProduct ? `Compras — ${historyProduct.name}` : "Histórico de compras"}
+        description="Compare preços e fornecedores ao longo do tempo."
+        records={historyProduct ? getHistoryForProduct(historyProduct.id) : []}
+        insights={historyProduct ? getInsightsForProduct(historyProduct.id) : null}
+        formatCurrency={formatCurrency}
+      />
 
       <Dialog
         open={deleteTarget !== null}

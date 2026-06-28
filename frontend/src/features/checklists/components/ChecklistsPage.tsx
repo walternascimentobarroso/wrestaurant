@@ -81,15 +81,28 @@ export function ChecklistsPage() {
                   key={type}
                   value={type}
                   className={cn(
-                    "h-auto min-h-14 flex-col gap-1 rounded-xl border-0 px-3 py-3",
-                    isActive && "bg-primary/10 text-primary",
+                    "h-auto min-h-14 cursor-pointer flex-col gap-1 rounded-xl border-2 px-3 py-3 transition-all",
+                    "border-transparent bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    "data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-elevated data-[state=on]:hover:bg-primary/90",
+                    isActive &&
+                      "border-primary bg-primary text-primary-foreground shadow-elevated",
                   )}
                 >
-                  <span className="flex items-center gap-2 font-heading text-sm font-semibold">
+                  <span
+                    className={cn(
+                      "flex items-center gap-2 font-heading text-sm font-semibold",
+                      isActive && "text-primary-foreground",
+                    )}
+                  >
                     <ListChecks className="size-4" />
                     {CHECKLIST_TYPE_LABELS[type]}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span
+                    className={cn(
+                      "text-xs tabular-nums",
+                      isActive ? "text-primary-foreground/75" : "text-muted-foreground",
+                    )}
+                  >
                     {typeView.progress.completed}/{typeView.progress.total}
                   </span>
                 </ToggleGroupItem>

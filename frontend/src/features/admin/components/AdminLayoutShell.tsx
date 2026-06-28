@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Building2,
   ClipboardList,
   FolderTree,
   LayoutDashboard,
   LayoutGrid,
   LogOut,
   Package,
+  Receipt,
   Warehouse,
 } from "lucide-react";
 
@@ -25,6 +27,8 @@ const ADMIN_NAV_ITEMS = [
   { href: "/admin/categorias", label: "Categorias", icon: FolderTree },
   { href: "/admin/produtos", label: "Produtos", icon: Package },
   { href: "/admin/estoque", label: "Estoque", icon: Warehouse },
+  { href: "/admin/fornecedores", label: "Fornecedores", icon: Building2 },
+  { href: "/admin/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
   { href: "/admin/relatorios", label: "Relatórios", icon: ClipboardList },
 ] as const;
 

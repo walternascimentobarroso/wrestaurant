@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { brand } from "@/design-system";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +49,11 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex h-dvh flex-col items-center justify-center bg-background px-4">
+      <div className="relative flex h-dvh flex-col items-center justify-center bg-background px-4">
+        <div className="absolute right-4 top-4">
+          <ThemeToggle />
+        </div>
+
         <div className="w-full max-w-sm space-y-4 text-center">
           <p className="font-heading text-xs font-semibold uppercase tracking-wide text-primary">
             {brand}
@@ -79,10 +84,15 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
     <div className="flex h-dvh bg-background">
       <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card shadow-elevated">
         <div className="border-b border-border px-4 py-4">
-          <p className="font-heading text-xs font-semibold uppercase tracking-wide text-primary">
-            {brand}
-          </p>
-          <h1 className="font-heading text-lg font-bold text-foreground">Administração</h1>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="font-heading text-xs font-semibold uppercase tracking-wide text-primary">
+                {brand}
+              </p>
+              <h1 className="font-heading text-lg font-bold text-foreground">Administração</h1>
+            </div>
+            <ThemeToggle />
+          </div>
         </div>
 
         <nav className="flex-1 space-y-1 p-3">

@@ -28,45 +28,28 @@ export function ThemeToggle() {
   );
 
   if (!mounted) {
-    return <div className="h-12 w-[6.5rem] rounded-2xl bg-muted" />;
+    return <div className="size-12 rounded-2xl bg-muted" />;
   }
 
-  const currentTheme = theme === "dark" ? "dark" : "light";
+  const isDark = theme === "dark";
+
+  function toggleTheme() {
+    setTheme(isDark ? "light" : "dark");
+  }
 
   return (
-    <div
-      className="flex rounded-2xl border border-border bg-card p-1 shadow-elevated"
-      role="group"
-      aria-label="Tema da interface"
+    <Button
+      type="button"
+      variant="outline"
+      size="icon-lg"
+      className={cn(
+        "size-12 rounded-2xl border-border bg-card shadow-elevated",
+      )}
+      onClick={toggleTheme}
+      aria-label={isDark ? "Tema escuro" : "Tema claro"}
+      aria-pressed={isDark}
     >
-      <Button
-        type="button"
-        variant={currentTheme === "light" ? "default" : "ghost"}
-        size="icon-lg"
-        className={cn(
-          "size-12 rounded-xl",
-          currentTheme === "light" && "shadow-elevated",
-        )}
-        onClick={() => setTheme("light")}
-        aria-label="Tema claro"
-        aria-pressed={currentTheme === "light"}
-      >
-        <Sun className="size-5" />
-      </Button>
-      <Button
-        type="button"
-        variant={currentTheme === "dark" ? "default" : "ghost"}
-        size="icon-lg"
-        className={cn(
-          "size-12 rounded-xl",
-          currentTheme === "dark" && "shadow-elevated",
-        )}
-        onClick={() => setTheme("dark")}
-        aria-label="Tema escuro"
-        aria-pressed={currentTheme === "dark"}
-      >
-        <Moon className="size-5" />
-      </Button>
-    </div>
+      {isDark ? <Moon className="size-5" /> : <Sun className="size-5" />}
+    </Button>
   );
 }

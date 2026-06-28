@@ -19,6 +19,7 @@ import { getSubcategoryNames } from "@/features/menu/services/menuCatalogStorage
 import { PurchaseHistoryDialog } from "@/features/purchases/components/PurchaseHistoryDialog";
 import { usePurchases } from "@/features/purchases/hooks/usePurchases";
 import {
+  calculateMargin,
   calculateProductMargin,
   getMarginColorClass,
 } from "@/features/purchases/utils/margin";
@@ -93,6 +94,20 @@ export function AdminProductsPage() {
   const rangeStart =
     filteredProducts.length === 0 ? 0 : (effectivePage - 1) * PAGE_SIZE + 1;
   const rangeEnd = Math.min(effectivePage * PAGE_SIZE, filteredProducts.length);
+
+  const previewSalePrice = Number.parseFloat(form.price.replace(",", "."));
+  const productForPreview = editingProduct
+    ? (products.find((product) => product.id === editingProduct.id) ?? editingProduct)
+    : null;
+  const previewCost = productForPreview?.lastPurchaseCost ?? null;
+
+  const previewMargin = useMemo(() => {
+    if (!Number.isFinite(previewSalePrice) || previewSalePrice <= 0) {
+      return { amount: null, percent: null };
+    }
+
+    return calculateMargin(previewSalePrice, previewCost);
+  }, [previewSalePrice, previewCost]);
 
   function handleFilterChange(category: string) {
     setFilterCategory(category);
@@ -479,32 +494,65 @@ export function AdminProductsPage() {
                 className="h-11 rounded-xl px-3"
                 placeholder="0,00"
               />
+
+              <div className="rounded-2xl border border-border bg-muted/30 p-4 text-sm">
+                <p className="font-medium text-foreground">Lucro por unidade</p>
+                {previewCost !== null && previewCost !== undefined ? (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Custo (última compra)</span>
+                      <span className="font-medium text-foreground">
+                        {formatCurrency(previewCost)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-muted-foreground">Preço de venda</span>
+                      <span className="font-medium text-foreground">
+                        {Number.isFinite(previewSalePrice) && previewSalePrice > 0
+                          ? formatCurrency(previewSalePrice)
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="border-t border-border pt-2">
+                      {previewMargin.amount !== null && previewMargin.percent !== null ? (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium text-foreground">Lucro</span>
+                          <div className="text-right">
+                            <span className={cn("font-semibold", getMarginColorClass(previewMargin))}>
+                              {formatCurrency(previewMargin.amount)}
+                            </span>
+                            <span
+                              className={cn("ml-2 text-xs font-medium", getMarginColorClass(previewMargin))}
+                            >
+                              ({previewMargin.percent.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">
+                          Informe um preço de venda válido para ver o lucro.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-muted-foreground">
+                    Sem custo registrado. O lucro será calculado após a primeira compra em
+                    Estoque.
+                  </p>
+                )}
+              </div>
             </div>
 
             {editingProduct ? (
               <div className="rounded-2xl border border-border bg-muted/30 p-4 text-sm">
-                <p className="font-medium text-foreground">Custo e fornecedor</p>
-                <p className="mt-1 text-muted-foreground">
-                  Definidos automaticamente ao registrar compras no estoque.
+                <p className="font-medium text-foreground">Fornecedor da última compra</p>
+                <p className="mt-2 font-medium text-foreground">
+                  {getSupplierName(
+                    suppliers,
+                    productForPreview?.preferredSupplierId ?? undefined,
+                  ) ?? "—"}
                 </p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <div>
-                    <span className="text-muted-foreground">Último custo: </span>
-                    <span className="font-medium text-foreground">
-                      {editingProduct.lastPurchaseCost !== null &&
-                      editingProduct.lastPurchaseCost !== undefined
-                        ? formatCurrency(editingProduct.lastPurchaseCost)
-                        : "—"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Fornecedor: </span>
-                    <span className="font-medium text-foreground">
-                      {getSupplierName(suppliers, editingProduct.preferredSupplierId ?? undefined) ??
-                        "—"}
-                    </span>
-                  </div>
-                </div>
               </div>
             ) : null}
 

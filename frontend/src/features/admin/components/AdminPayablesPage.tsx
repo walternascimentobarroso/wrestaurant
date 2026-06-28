@@ -878,6 +878,13 @@ export function AdminPayablesPage() {
 
             {payError ? <p className="text-sm text-destructive">{payError}</p> : null}
 
+            {payTarget && payTarget.recurrence !== "none" ? (
+              <p className="rounded-xl bg-primary/10 px-3 py-2 text-xs text-primary">
+                A próxima parcela ({getRecurrenceLabel(payTarget.recurrence)}) será criada
+                automaticamente após confirmar.
+              </p>
+            ) : null}
+
             <DialogFooter className="border-0 bg-transparent p-0 sm:justify-end">
               <Button
                 type="button"

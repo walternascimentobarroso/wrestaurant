@@ -184,6 +184,22 @@ seed-sales: ## Popula vendas fake do dia (cole no console do browser)
 	@echo "Ou copie o arquivo: ${CYAN}frontend/public/scripts/seed-daily-sales.js${NOCOLOR}"
 	@echo ""
 
+.PHONY: seed-payables
+seed-payables: ## Popula fornecedores e contas a pagar fake (cole no console)
+	@echo ""
+	@echo "${YELLOW}Seed de fornecedores e contas a pagar fake${NOCOLOR}"
+	@echo ""
+	@echo "1. Abra ${CYAN}http://localhost:$(FRONTEND_PORT)/admin/contas-a-pagar${NOCOLOR}"
+	@echo "2. DevTools → Console (F12)"
+	@echo "3. Cole e execute:"
+	@echo ""
+	@echo "${CYAN}fetch('/scripts/seed-payables.js').then(r=>r.text()).then(eval)${NOCOLOR}"
+	@echo ""
+	@echo "Ou copie o arquivo: ${CYAN}frontend/public/scripts/seed-payables.js${NOCOLOR}"
+	@echo ""
+	@echo "${YELLOW}Nota:${NOCOLOR} na primeira visita (sem localStorage), os dados demo já aparecem automaticamente."
+	@echo ""
+
 .PHONY: frontend-lint
 frontend-lint: ## Executa ESLint no frontend
 	$(DOCKER_COMPOSE) exec frontend npm run lint

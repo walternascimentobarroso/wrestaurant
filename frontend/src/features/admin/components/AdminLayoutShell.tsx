@@ -9,6 +9,7 @@ import {
   History,
   LayoutDashboard,
   LayoutGrid,
+  ListChecks,
   LogOut,
   Package,
   Receipt,
@@ -32,6 +33,7 @@ const ADMIN_NAV_ITEMS = [
   { href: "/admin/compras", label: "Compras", icon: History },
   { href: "/admin/fornecedores", label: "Fornecedores", icon: Building2 },
   { href: "/admin/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
+  { href: "/admin/checklists", label: "Checklists", icon: ListChecks },
   { href: "/admin/relatorios", label: "Relatórios", icon: ClipboardList },
 ] as const;
 

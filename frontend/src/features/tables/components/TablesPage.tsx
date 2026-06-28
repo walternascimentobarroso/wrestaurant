@@ -2,6 +2,7 @@
 
 import { AppHeaderActions } from "@/components/app-header-actions";
 import { brand } from "@/design-system";
+import { ChecklistIncompleteBanner } from "@/features/checklists/components/ChecklistIncompleteBanner";
 
 import { TABLE_CATEGORY_CONFIG } from "../data/initialTables";
 import { TABLE_SECTION_LABELS } from "../types";
@@ -37,6 +38,9 @@ export function TablesPage() {
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <div className="mb-4">
+          <ChecklistIncompleteBanner />
+        </div>
         <div className="space-y-8">
           {TABLE_CATEGORY_CONFIG.map(({ category }) => {
             const categoryTables = tables.filter((table) => table.category === category);

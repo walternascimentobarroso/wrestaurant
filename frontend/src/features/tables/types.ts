@@ -14,15 +14,30 @@ export const TABLE_SECTION_LABELS: Record<TableCategory, string> = {
   outdoor: "Mesas externas",
 };
 
+export type ProductKind = "menu" | "ingredient";
+
+export type StockUnit = "un" | "ml" | "cl" | "L" | "g" | "kg";
+
+export interface RecipeLine {
+  ingredientId: string;
+  quantity: number;
+  unit?: StockUnit;
+}
+
 export interface Product {
   id: string;
   name: string;
   price: number;
   category: string;
   subcategory: string;
+  kind: ProductKind;
+  recipe?: RecipeLine[];
   trackStock: boolean;
   stockQuantity: number;
   minStock: number;
+  stockUnit?: StockUnit;
+  packageSize?: number;
+  packageUnit?: StockUnit;
   lastPurchaseCost?: number | null;
   preferredSupplierId?: string | null;
 }

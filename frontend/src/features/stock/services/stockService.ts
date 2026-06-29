@@ -2,21 +2,19 @@ import {
   getProductsSnapshot,
   persistProducts,
 } from "@/features/menu/services/productStorage";
+import {
+  expandOrderStockRequirements,
+  formatRecipeSources,
+  formatStockRequirement,
+  getMenuProductMaxServings,
+  getProductStockDeduction,
+} from "@/features/recipes/utils/expandRecipe";
+import { isIngredient, tracksOwnStock } from "@/features/recipes/utils/productKind";
 import type { Product, TableOrderItem } from "@/features/tables/types";
 
 import { appendStockMovements } from "./stockStorage";
 import type { StockActionResult, StockMovement, StockMovementType } from "../types";
 import { isLowStock, isOutOfStock } from "../utils/productStock";
-
-function aggregateOrderQuantities(items: TableOrderItem[]): Map<string, number> {
-  const quantities = new Map<string, number>();
-
-  for (const item of items) {
-    quantities.set(item.productId, (quantities.get(item.productId) ?? 0) + item.quantity);
-  }
-
-  return quantities;
-}
 
 function createMovement(
   product: Product,
@@ -43,22 +41,25 @@ export function validateOrderStock(
   items: TableOrderItem[],
   products = getProductsSnapshot(),
 ): StockActionResult {
-  const quantities = aggregateOrderQuantities(items);
+  const requirements = expandOrderStockRequirements(items, products);
 
-  for (const [productId, quantity] of quantities) {
-    const product = products.find((entry) => entry.id === productId);
-    if (!product) {
-      return { ok: false, error: "Produto do pedido não encontrado no cardápio." };
+  for (const [productId, requirement] of requirements) {
+    const stockProduct = products.find((entry) => entry.id === productId);
+    if (!stockProduct) {
+      return { ok: false, error: "Insumo da receita não encontrado no cadastro." };
     }
 
-    if (!product.trackStock) {
+    if (!stockProduct.trackStock) {
       continue;
     }
 
-    if (product.stockQuantity < quantity) {
+    if (stockProduct.stockQuantity < requirement.quantity) {
+      const sourceLabel = formatRecipeSources(requirement.sources);
+      const available = formatStockRequirement(stockProduct, stockProduct.stockQuantity);
+      const needed = formatStockRequirement(stockProduct, requirement.quantity);
       return {
         ok: false,
-        error: `Estoque insuficiente: ${product.name} (disponível: ${product.stockQuantity}).`,
+        error: `Estoque insuficiente: ${stockProduct.name} (disponível: ${available}, necessário: ${needed}${sourceLabel ? ` — ${sourceLabel}` : ""}).`,
       };
     }
   }
@@ -69,18 +70,47 @@ export function validateOrderStock(
 export function canAddProductToOrder(
   product: Product,
   currentQuantityInOrder: number,
+  products = getProductsSnapshot(),
 ): StockActionResult {
-  if (!product.trackStock) {
+  if (isIngredient(product)) {
+    return { ok: false, error: "Insumos não podem ser vendidos diretamente." };
+  }
+
+  const nextQuantity = currentQuantityInOrder + 1;
+  const requirements = getProductStockDeduction(product, nextQuantity, products);
+
+  if (requirements.length === 0) {
     return { ok: true };
   }
 
-  if (product.stockQuantity <= currentQuantityInOrder) {
+  for (const requirement of requirements) {
+    const stockProduct = products.find((entry) => entry.id === requirement.productId);
+    if (!stockProduct) {
+      return { ok: false, error: `Insumo não encontrado na receita de ${product.name}.` };
+    }
+
+    if (!stockProduct.trackStock) {
+      continue;
+    }
+
+    if (stockProduct.stockQuantity < requirement.quantity) {
+      const available = formatStockRequirement(stockProduct, stockProduct.stockQuantity);
+      const needed = formatStockRequirement(stockProduct, requirement.quantity);
+      return {
+        ok: false,
+        error:
+          stockProduct.stockQuantity === 0
+            ? `${stockProduct.name} esgotado (necessário para ${product.name}).`
+            : `Estoque insuficiente: ${stockProduct.name} (disponível: ${available}, necessário: ${needed}).`,
+      };
+    }
+  }
+
+  const maxServings = getMenuProductMaxServings(product, products);
+  if (Number.isFinite(maxServings) && nextQuantity > maxServings) {
     return {
       ok: false,
-      error:
-        product.stockQuantity === 0
-          ? `${product.name} está esgotado.`
-          : `Estoque insuficiente: ${product.name} (disponível: ${product.stockQuantity}).`,
+      error: `Não é possível adicionar mais ${product.name}: insumos insuficientes.`,
     };
   }
 
@@ -97,18 +127,25 @@ export function deductStockForOrder(
     return validation;
   }
 
-  const quantities = aggregateOrderQuantities(items);
+  const requirements = expandOrderStockRequirements(items, products);
   const movements: StockMovement[] = [];
 
   const nextProducts = products.map((product) => {
-    const quantity = quantities.get(product.id);
-    if (!quantity || !product.trackStock) {
+    const requirement = requirements.get(product.id);
+    if (!requirement || !product.trackStock) {
       return product;
     }
 
-    const quantityAfter = product.stockQuantity - quantity;
+    const quantityAfter = product.stockQuantity - requirement.quantity;
     movements.push(
-      createMovement(product, "sale", -quantity, quantityAfter, referenceId),
+      createMovement(
+        product,
+        "sale",
+        -requirement.quantity,
+        quantityAfter,
+        referenceId,
+        formatRecipeSources(requirement.sources),
+      ),
     );
 
     return { ...product, stockQuantity: quantityAfter };
@@ -163,7 +200,9 @@ export function filterStockProducts(
   products: Product[],
   filter: "all" | "low" | "out",
 ): Product[] {
-  const tracked = products.filter((product) => product.trackStock);
+  const tracked = products.filter(
+    (product) => product.trackStock && (isIngredient(product) || tracksOwnStock(product)),
+  );
 
   switch (filter) {
     case "low":

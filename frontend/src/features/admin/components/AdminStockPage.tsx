@@ -17,6 +17,7 @@ import { PriceComparisonAlert } from "@/features/purchases/components/PurchaseHi
 import { usePurchases } from "@/features/purchases/hooks/usePurchases";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 import { useStock } from "@/features/stock/hooks/useStock";
+import { formatStockAmount, getPurchaseUnitLabel } from "@/features/stock/utils/stockUnits";
 import type { StockFilter } from "@/features/stock/types";
 import { isLowStock, isOutOfStock } from "@/features/stock/utils/productStock";
 import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
@@ -251,14 +252,16 @@ export function AdminStockPage() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{product.category}</td>
                     <td className="px-4 py-3 font-semibold text-foreground">
-                      {product.stockQuantity}
+                      {formatStockAmount(product)}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {product.lastPurchaseCost !== null && product.lastPurchaseCost !== undefined
-                        ? formatCurrency(product.lastPurchaseCost)
+                        ? `${formatCurrency(product.lastPurchaseCost)} / ${getPurchaseUnitLabel(product)}`
                         : "—"}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{product.minStock}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {formatStockAmount(product, product.minStock)}
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={cn(
@@ -360,7 +363,7 @@ export function AdminStockPage() {
             </DialogTitle>
             <DialogDescription>
               {adjustTarget
-                ? `${adjustTarget.name} — estoque atual: ${adjustTarget.stockQuantity}`
+                ? `${adjustTarget.name} — estoque atual: ${formatStockAmount(adjustTarget)}`
                 : null}
             </DialogDescription>
           </DialogHeader>
@@ -369,12 +372,13 @@ export function AdminStockPage() {
             <div className="space-y-2">
               <label htmlFor="adjust-quantity" className="text-sm font-medium">
                 Quantidade
+                {adjustTarget ? ` (${getPurchaseUnitLabel(adjustTarget)})` : ""}
               </label>
               <Input
                 id="adjust-quantity"
                 type="number"
-                min={1}
-                step={1}
+                min={0.01}
+                step={adjustTarget?.stockUnit === "un" && !adjustTarget.packageSize ? 1 : 0.01}
                 value={adjustQuantity}
                 onChange={(event) => {
                   setAdjustQuantity(event.target.value);
@@ -416,7 +420,7 @@ export function AdminStockPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <label htmlFor="purchase-unit-cost" className="text-sm font-medium">
-                      Preço unitário de compra
+                      Preço por {adjustTarget ? getPurchaseUnitLabel(adjustTarget) : "unidade"}
                     </label>
                     <Input
                       id="purchase-unit-cost"

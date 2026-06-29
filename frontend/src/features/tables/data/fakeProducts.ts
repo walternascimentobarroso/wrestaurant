@@ -2,7 +2,10 @@ import { normalizeProducts } from "@/features/stock/utils/productStock";
 
 import type { Product } from "../types";
 
-type ProductSeed = Omit<Product, "trackStock" | "stockQuantity" | "minStock">;
+type ProductSeed = Omit<
+  Product,
+  "trackStock" | "stockQuantity" | "minStock" | "kind" | "recipe" | "stockUnit" | "packageSize" | "packageUnit"
+>;
 
 const BASE_FAKE_PRODUCTS: ProductSeed[] = [
   { id: "p1", name: "Bruschetta", price: 24.9, category: "Entradas", subcategory: "Frias" },

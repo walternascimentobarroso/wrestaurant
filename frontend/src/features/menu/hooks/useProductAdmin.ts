@@ -2,8 +2,14 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
+import { normalizeRecipeLines } from "@/features/recipes/utils/expandRecipe";
+import { isIngredient } from "@/features/recipes/utils/productKind";
+import {
+  isIngredientUsedInRecipes,
+  validateRecipe,
+} from "@/features/recipes/utils/validateRecipe";
 import { getTablesSnapshot } from "@/features/tables/services/tableStorage";
-import type { Product } from "@/features/tables/types";
+import type { Product, ProductKind, RecipeLine, StockUnit } from "@/features/tables/types";
 
 import {
   getProductsServerSnapshot,
@@ -18,9 +24,15 @@ export interface ProductInput {
   price: number;
   category: string;
   subcategory: string;
+  kind: ProductKind;
+  recipe?: RecipeLine[];
   trackStock: boolean;
   stockQuantity: number;
   minStock: number;
+  stockUnit: StockUnit;
+  usesPackage: boolean;
+  packageSize?: number;
+  packageUnit?: StockUnit;
 }
 
 function normalizeName(value: string): string {
@@ -37,26 +49,121 @@ function isProductInActiveOrders(productId: string): boolean {
   );
 }
 
+function isIngredientInput(input: ProductInput): boolean {
+  return input.kind === "ingredient";
+}
+
+function usesRecipe(input: ProductInput, products: Product[]): boolean {
+  return input.kind === "menu" && normalizeRecipeLines(input.recipe, products).length > 0;
+}
+
+function buildUnitFields(
+  input: ProductInput,
+): Pick<Product, "stockUnit" | "packageSize" | "packageUnit"> {
+  const stockUnit = input.stockUnit ?? "un";
+
+  if (stockUnit === "un" && input.usesPackage && input.packageSize && input.packageUnit) {
+    return {
+      stockUnit,
+      packageSize: input.packageSize,
+      packageUnit: input.packageUnit,
+    };
+  }
+
+  return {
+    stockUnit,
+    packageSize: undefined,
+    packageUnit: undefined,
+  };
+}
+
 function validateStockFields(input: ProductInput): string | null {
-  if (input.trackStock && (!Number.isFinite(input.stockQuantity) || input.stockQuantity < 0)) {
+  const tracksStock = isIngredientInput(input) || (input.kind === "menu" && input.trackStock);
+
+  if (tracksStock && (!Number.isFinite(input.stockQuantity) || input.stockQuantity < 0)) {
     return "Informe um estoque válido (zero ou maior).";
   }
 
-  if (input.trackStock && (!Number.isFinite(input.minStock) || input.minStock < 0)) {
+  if (tracksStock && (!Number.isFinite(input.minStock) || input.minStock < 0)) {
     return "Informe um estoque mínimo válido (zero ou maior).";
   }
 
   return null;
 }
 
-function buildProductFields(input: ProductInput): Pick<
+function validateUnitFields(input: ProductInput): string | null {
+  if (!isIngredientInput(input) && !(input.kind === "menu" && input.trackStock)) {
+    return null;
+  }
+
+  if (input.stockUnit === "un" && input.usesPackage) {
+    if (!input.packageSize || input.packageSize <= 0) {
+      return "Informe o tamanho da embalagem (ex.: 70 para garrafa de 70 cl).";
+    }
+
+    if (!input.packageUnit) {
+      return "Selecione a unidade da embalagem.";
+    }
+  }
+
+  return null;
+}
+
+function buildProductFields(
+  input: ProductInput,
+  products: Product[],
+): Pick<
   Product,
-  "trackStock" | "stockQuantity" | "minStock"
+  | "kind"
+  | "recipe"
+  | "trackStock"
+  | "stockQuantity"
+  | "minStock"
+  | "price"
+  | "stockUnit"
+  | "packageSize"
+  | "packageUnit"
 > {
+  const unitFields = buildUnitFields(input);
+  const recipe = usesRecipe(input, products)
+    ? normalizeRecipeLines(input.recipe, products)
+    : undefined;
+  const ingredient = isIngredientInput(input);
+
+  if (ingredient) {
+    return {
+      kind: "ingredient",
+      recipe: undefined,
+      trackStock: true,
+      stockQuantity: input.stockQuantity,
+      minStock: input.minStock,
+      price: 0,
+      ...unitFields,
+    };
+  }
+
+  if (recipe && recipe.length > 0) {
+    return {
+      kind: "menu",
+      recipe,
+      trackStock: false,
+      stockQuantity: 0,
+      minStock: 0,
+      price: input.price,
+      stockUnit: "un",
+      packageSize: undefined,
+      packageUnit: undefined,
+    };
+  }
+
   return {
+    kind: "menu",
+    recipe: undefined,
     trackStock: input.trackStock,
     stockQuantity: input.trackStock ? input.stockQuantity : 0,
     minStock: input.trackStock ? input.minStock : 0,
+    price: input.price,
+    ...unitFields,
   };
 }
 
@@ -78,8 +185,10 @@ export function useProductAdmin() {
         return { ok: false, error: "Informe o nome do produto." };
       }
 
-      if (!Number.isFinite(input.price) || input.price <= 0) {
-        return { ok: false, error: "Informe um preço válido maior que zero." };
+      if (!isIngredientInput(input)) {
+        if (!Number.isFinite(input.price) || input.price <= 0) {
+          return { ok: false, error: "Informe um preço válido maior que zero." };
+        }
       }
 
       if (!input.category || !input.subcategory) {
@@ -91,13 +200,24 @@ export function useProductAdmin() {
         return { ok: false, error: stockError };
       }
 
+      const unitError = validateUnitFields(input);
+      if (unitError) {
+        return { ok: false, error: unitError };
+      }
+
+      if (usesRecipe(input, products)) {
+        const recipeError = validateRecipe(input.recipe, products);
+        if (recipeError) {
+          return { ok: false, error: recipeError };
+        }
+      }
+
       const newProduct: Product = {
         id: createProductId(),
         name,
-        price: input.price,
         category: input.category,
         subcategory: input.subcategory,
-        ...buildProductFields(input),
+        ...buildProductFields(input, products),
       };
 
       saveProducts([newProduct, ...products]);
@@ -118,8 +238,10 @@ export function useProductAdmin() {
         return { ok: false, error: "Informe o nome do produto." };
       }
 
-      if (!Number.isFinite(input.price) || input.price <= 0) {
-        return { ok: false, error: "Informe um preço válido maior que zero." };
+      if (!isIngredientInput(input)) {
+        if (!Number.isFinite(input.price) || input.price <= 0) {
+          return { ok: false, error: "Informe um preço válido maior que zero." };
+        }
       }
 
       if (!input.category || !input.subcategory) {
@@ -131,16 +253,27 @@ export function useProductAdmin() {
         return { ok: false, error: stockError };
       }
 
+      const unitError = validateUnitFields(input);
+      if (unitError) {
+        return { ok: false, error: unitError };
+      }
+
+      if (usesRecipe(input, products)) {
+        const recipeError = validateRecipe(input.recipe, products, productId);
+        if (recipeError) {
+          return { ok: false, error: recipeError };
+        }
+      }
+
       saveProducts(
         products.map((entry) =>
           entry.id === productId
             ? {
                 ...entry,
                 name,
-                price: input.price,
                 category: input.category,
                 subcategory: input.subcategory,
-                ...buildProductFields(input),
+                ...buildProductFields(input, products),
               }
             : entry,
         ),
@@ -162,6 +295,13 @@ export function useProductAdmin() {
         return {
           ok: false,
           error: "Não é possível excluir: produto está em um pedido aberto.",
+        };
+      }
+
+      if (isIngredient(product) && isIngredientUsedInRecipes(productId, products)) {
+        return {
+          ok: false,
+          error: "Não é possível excluir: insumo usado em fichas técnicas.",
         };
       }
 

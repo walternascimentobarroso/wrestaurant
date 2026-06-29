@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { useMenuCatalog } from "@/features/menu/hooks/useMenuCatalog";
 import { useProducts, useProductsByCategory } from "@/features/menu/hooks/useProducts";
 import { getSubcategoryNames } from "@/features/menu/services/menuCatalogStorage";
+import { getMenuProductMaxServings } from "@/features/recipes/utils/expandRecipe";
+import { hasRecipe } from "@/features/recipes/utils/productKind";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 import type { StockActionResult } from "@/features/stock/types";
-import { isLowStock, isOutOfStock } from "@/features/stock/utils/productStock";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/features/tables/types";
 
@@ -204,12 +205,16 @@ export function ProductList({ items, onAdd }: ProductListProps) {
           <div className="grid grid-cols-2 gap-3 pb-4 md:grid-cols-3">
             {categoryProducts.map((product) => {
               const quantity = getQuantity(product.id);
-              const outOfStock = isOutOfStock(product);
-              const lowStock = isLowStock(product) && !outOfStock;
+              const maxServings = getMenuProductMaxServings(product, products);
+              const outOfStock = maxServings === 0;
+              const lowStock =
+                !outOfStock &&
+                Number.isFinite(maxServings) &&
+                maxServings <= (hasRecipe(product) ? 5 : product.minStock);
               const orderQuantity = quantity;
               const cannotAdd =
                 outOfStock ||
-                (product.trackStock && product.stockQuantity <= orderQuantity);
+                (Number.isFinite(maxServings) && maxServings <= orderQuantity);
 
               return (
                 <ProductCard
@@ -218,6 +223,7 @@ export function ProductList({ items, onAdd }: ProductListProps) {
                   quantity={quantity}
                   outOfStock={outOfStock}
                   lowStock={lowStock}
+                  availableServings={Number.isFinite(maxServings) ? maxServings : null}
                   cannotAdd={cannotAdd}
                   formatCurrency={formatCurrency}
                   onAdd={() => handleAddProduct(product.id)}
@@ -236,6 +242,7 @@ interface ProductCardProps {
   quantity: number;
   outOfStock: boolean;
   lowStock: boolean;
+  availableServings: number | null;
   cannotAdd: boolean;
   formatCurrency: (value: number) => string;
   onAdd: () => void;
@@ -246,6 +253,7 @@ function ProductCard({
   quantity,
   outOfStock,
   lowStock,
+  availableServings,
   cannotAdd,
   formatCurrency,
   onAdd,
@@ -256,8 +264,8 @@ function ProductCard({
       disabled={cannotAdd}
       onClick={onAdd}
       aria-label={
-        lowStock
-          ? `${product.name}, estoque baixo, restam ${product.stockQuantity}`
+        lowStock && availableServings !== null
+          ? `${product.name}, estoque baixo, restam ${availableServings}`
           : outOfStock
             ? `${product.name}, esgotado`
             : product.name
@@ -280,9 +288,9 @@ function ProductCard({
         !outOfStock && !lowStock && quantity === 0 && "border-border bg-card",
       )}
     >
-      {lowStock ? (
+      {lowStock && availableServings !== null ? (
         <span className="absolute left-3 top-3 rounded-lg bg-amber-500 px-2 py-0.5 text-xs font-bold text-white shadow-sm">
-          Restam {product.stockQuantity}
+          Restam {availableServings}
         </span>
       ) : null}
 

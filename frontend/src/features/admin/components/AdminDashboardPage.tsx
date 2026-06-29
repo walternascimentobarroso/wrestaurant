@@ -25,6 +25,7 @@ import { useProducts } from "@/features/menu/hooks/useProducts";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 import { useStock } from "@/features/stock/hooks/useStock";
 import { isLowStock, isOutOfStock } from "@/features/stock/utils/productStock";
+import { formatStockAmount } from "@/features/stock/utils/stockUnits";
 import { useTableAdmin } from "@/features/tables/hooks/useTableAdmin";
 import { cn } from "@/lib/utils";
 
@@ -378,7 +379,7 @@ export function AdminDashboardPage() {
                       isOutOfStock(product) ? "text-destructive" : "text-amber-600 dark:text-amber-400",
                     )}
                   >
-                    {product.stockQuantity} un.
+                    {formatStockAmount(product)}
                   </span>
                 </li>
               ))}

@@ -7,6 +7,7 @@ import {
   getProductsSnapshot,
   subscribeProducts,
 } from "@/features/menu/services/productStorage";
+import { isIngredient, tracksOwnStock } from "@/features/recipes/utils/productKind";
 import type { Product } from "@/features/tables/types";
 
 import {
@@ -35,7 +36,11 @@ export function useStock() {
   );
 
   const trackedProducts = useMemo(
-    () => products.filter((product) => product.trackStock),
+    () =>
+      products.filter(
+        (product) =>
+          product.trackStock && (isIngredient(product) || tracksOwnStock(product)),
+      ),
     [products],
   );
 

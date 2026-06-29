@@ -1,5 +1,8 @@
 import type { Product } from "@/features/tables/types";
 
+import { calculateRecipeCost } from "@/features/recipes/utils/recipeCost";
+import { hasRecipe } from "@/features/recipes/utils/productKind";
+
 import type { ProductMargin } from "../types";
 
 export function calculateMargin(
@@ -16,7 +19,17 @@ export function calculateMargin(
   return { amount, percent };
 }
 
-export function calculateProductMargin(product: Product): ProductMargin {
+export function calculateProductMargin(
+  product: Product,
+  products: Product[] = [],
+): ProductMargin {
+  if (hasRecipe(product) && products.length > 0) {
+    const recipeCost = calculateRecipeCost(product, products);
+    if (recipeCost !== null) {
+      return calculateMargin(product.price, recipeCost);
+    }
+  }
+
   return calculateMargin(product.price, product.lastPurchaseCost);
 }
 

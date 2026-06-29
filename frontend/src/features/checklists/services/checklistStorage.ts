@@ -18,7 +18,7 @@ const SERVER_SNAPSHOT = buildSeedChecklists();
 let cachedClientRaw: string | null | undefined;
 let cachedClientSnapshot: ChecklistStore | null = null;
 
-interface LegacyChecklistStore extends Partial<ChecklistStore> {
+interface LegacyChecklistStore {
   templates?: Partial<ChecklistTemplate>[];
   items?: Partial<ChecklistItem>[];
   completions?: Partial<ChecklistCompletion>[];

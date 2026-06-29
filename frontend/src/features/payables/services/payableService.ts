@@ -64,7 +64,8 @@ export function buildPayableFromInput(
   createdAt: string,
   current?: Payable,
 ): Payable {
-  const status: PayableManualStatus = input.status ?? current?.status ?? "pending";
+  const status: PayableManualStatus =
+    input.status ?? (current?.status === "paid" ? "paid" : "pending");
   const base = {
     id,
     categoryId: input.categoryId,

@@ -1,6 +1,8 @@
 import { apiFetch } from "@/lib/api";
 import { registerHandler, type SyncMutation } from "@/lib/offline";
 
+import { linkSaleToPaymentMutation } from "@/features/sales/services/salesSyncHandlers";
+
 import { isTempTableId } from "./tableMutations";
 import { replaceTempTableId, resolveTableId } from "./tableStorage";
 import type { TableWithDetails } from "../types";
@@ -31,10 +33,16 @@ async function handleTableMutation(mutation: SyncMutation): Promise<void> {
       return;
     }
     case "payment": {
-      await apiFetch<{ ok: boolean }>(`/tables/${tableId}/payment`, {
-        method: "POST",
-        body: JSON.stringify(mutation.payload),
-      });
+      const response = await apiFetch<{ ok: boolean; saleId?: string }>(
+        `/tables/${tableId}/payment`,
+        {
+          method: "POST",
+          body: JSON.stringify(mutation.payload),
+        },
+      );
+      if (response.saleId) {
+        linkSaleToPaymentMutation(mutation.id, response.saleId);
+      }
       return;
     }
     case "createTable": {

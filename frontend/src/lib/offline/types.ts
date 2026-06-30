@@ -37,13 +37,16 @@ export type MenuCatalogSyncOperation =
   | "updateSubcategory"
   | "deleteSubcategory";
 
+export type PayableSyncOperation = "markPaid" | "markPending";
+
 export type SyncOperation =
   | "create"
   | "update"
   | "delete"
   | TableSyncOperation
   | SettingsSyncOperation
-  | MenuCatalogSyncOperation;
+  | MenuCatalogSyncOperation
+  | PayableSyncOperation;
 
 export interface SyncMutation {
   id: string;
@@ -61,6 +64,8 @@ export interface PersistenceAdapter {
   set: <T>(key: string, value: T) => void;
   remove: (key: string) => void;
   keys: () => string[];
+  /** Optional async preload (IndexedDB). Call before first read when needed. */
+  init?: () => Promise<void>;
 }
 
 export interface OfflineStoreOptions<T> {

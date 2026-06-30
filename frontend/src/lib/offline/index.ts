@@ -30,5 +30,9 @@ export {
   setItem,
   STORAGE_PREFIX,
 } from "./localPersistence";
+export {
+  indexedDbPersistence,
+  initIndexedDbPersistence,
+} from "./indexedDbPersistence";
 export { syncQueue } from "./syncQueue";
 export { processQueue, registerHandler, syncEngine, startSyncEngine } from "./syncEngine";

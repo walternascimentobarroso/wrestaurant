@@ -19,6 +19,7 @@ import {
   type ProductCreateInput,
   type ProductUpdateInput,
 } from "./productMutations";
+import { applyPurchaseToProduct } from "@/features/purchases/services/purchaseMutations";
 
 const STORAGE_KEY = "products";
 
@@ -145,6 +146,17 @@ export function renameSubcategoryInProductCache(
 ): void {
   store.mutate((products) =>
     renameSubcategoryInProducts(products, categoryName, oldName, newName),
+  );
+}
+
+export function applyPurchaseToProductCache(
+  productId: string,
+  quantity: number,
+  unitCost: number,
+  supplierId: string,
+): void {
+  store.mutate((products) =>
+    applyPurchaseToProduct(products, productId, quantity, unitCost, supplierId),
   );
 }
 

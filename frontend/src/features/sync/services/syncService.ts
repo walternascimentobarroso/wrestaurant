@@ -2,11 +2,20 @@ import { registerMenuCatalogSyncHandlers } from "@/features/menu/services/menuSy
 import { registerProductSyncHandlers } from "@/features/menu/services/productSyncHandlers";
 import { hydrateMenuCatalogIfEmpty } from "@/features/menu/services/menuCatalogStorage";
 import { hydrateProductsIfEmpty } from "@/features/menu/services/productStorage";
+import { registerPayableSyncHandlers } from "@/features/payables/services/payableSyncHandlers";
+import { hydratePayablesIfEmpty } from "@/features/payables/services/payableStorage";
+import { registerPurchaseSyncHandlers } from "@/features/purchases/services/purchaseSyncHandlers";
+import { hydratePurchasesIfEmpty } from "@/features/purchases/services/purchaseStorage";
+import { registerSalesSyncHandlers } from "@/features/sales/services/salesSyncHandlers";
+import { hydrateSalesIfEmpty } from "@/features/sales/services/salesStorage";
 import { hydrateSettingsIfEmpty } from "@/features/settings/services/settingsStorage";
+import { registerSupplierSyncHandlers } from "@/features/suppliers/services/supplierSyncHandlers";
+import { hydrateSuppliersIfEmpty } from "@/features/suppliers/services/supplierStorage";
 import { registerTableSyncHandlers } from "@/features/tables/services/tableSyncHandlers";
 import { hydrateTablesIfEmpty } from "@/features/tables/services/tableStorage";
 import { apiFetch } from "@/lib/api";
 import {
+  initIndexedDbPersistence,
   isOnline,
   processQueue,
   registerHandler,
@@ -41,16 +50,25 @@ function registerSyncHandlers(): void {
   registerTableSyncHandlers();
   registerProductSyncHandlers();
   registerMenuCatalogSyncHandlers();
+  registerSalesSyncHandlers();
+  registerPayableSyncHandlers();
+  registerSupplierSyncHandlers();
+  registerPurchaseSyncHandlers();
   registerHandler("settings", handleSettingsMutation);
   handlersRegistered = true;
 }
 
 export async function hydrateAll(): Promise<void> {
+  await initIndexedDbPersistence();
   await Promise.all([
     hydrateTablesIfEmpty(),
     hydrateProductsIfEmpty(),
     hydrateSettingsIfEmpty(),
     hydrateMenuCatalogIfEmpty(),
+    hydrateSalesIfEmpty(),
+    hydratePayablesIfEmpty(),
+    hydrateSuppliersIfEmpty(),
+    hydratePurchasesIfEmpty(),
   ]);
 }
 
@@ -69,6 +87,10 @@ export async function hydrateFromServer(
       products: hydrateProductsIfEmpty,
       settings: hydrateSettingsIfEmpty,
       menuCatalog: hydrateMenuCatalogIfEmpty,
+      sales: hydrateSalesIfEmpty,
+      payables: hydratePayablesIfEmpty,
+      suppliers: hydrateSuppliersIfEmpty,
+      purchases: hydratePurchasesIfEmpty,
     };
 
     const hydrate = hydrators[entity];

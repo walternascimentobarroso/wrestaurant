@@ -9,6 +9,7 @@ export function createOfflineStore<T>(options: OfflineStoreOptions<T>) {
 
   let cache: T = options.serverSnapshot;
   let loaded = false;
+  let initStarted = false;
   let error: unknown = null;
   const listeners = new Set<Listener>();
 
@@ -36,11 +37,33 @@ export function createOfflineStore<T>(options: OfflineStoreOptions<T>) {
     }
   }
 
+  function ensurePersistenceReady(): void {
+    if (initStarted || typeof window === "undefined" || !persistence.init) {
+      if (!loaded && !persistence.init) {
+        loadFromPersistence();
+        emit();
+      }
+      return;
+    }
+
+    initStarted = true;
+    void persistence.init().then(() => {
+      if (!loaded) {
+        loadFromPersistence();
+        emit();
+      }
+    });
+  }
+
   function subscribe(listener: Listener): () => void {
     listeners.add(listener);
     if (!loaded) {
-      loadFromPersistence();
-      emit();
+      if (persistence.init) {
+        ensurePersistenceReady();
+      } else {
+        loadFromPersistence();
+        emit();
+      }
     }
     return () => {
       listeners.delete(listener);

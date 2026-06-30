@@ -1,4 +1,9 @@
-import type { Product, Table, TableOrderItem, TableWithDetails } from "../types";
+import type { Product, Table, TableOrderItem, TableWithDetails, PaymentMethod } from "../types";
+import {
+  buildSaleFromTable,
+  buildSaleIdFromMutationId,
+} from "@/features/sales/services/saleMutations";
+import { recordSale } from "@/features/sales/services/salesStorage";
 import { apiFetch } from "@/lib/api";
 import {
   createOfflineStore,
@@ -187,13 +192,33 @@ export async function receivePaymentApi(
   tableId: number,
   payment: { method: string; amountReceived: number; change: number },
 ): Promise<{ ok: boolean }> {
-  store.mutate((tables) => sortTables(applyPayment(tables, tableId)));
-  enqueueAndFlush({
+  const table = findTable(tableId);
+  const products = getProductsForEnrichment();
+  const mutation = syncQueue.enqueue({
     entity: "tables",
     operation: "payment",
     entityId: tableId,
     payload: payment,
   });
+
+  if (table && table.items.length > 0) {
+    const saleId = buildSaleIdFromMutationId(mutation.id);
+    recordSale(
+      buildSaleFromTable(
+        table,
+        products,
+        {
+          method: payment.method as PaymentMethod,
+          amountReceived: payment.amountReceived,
+          change: payment.change,
+        },
+        saleId,
+      ),
+    );
+  }
+
+  store.mutate((tables) => sortTables(applyPayment(tables, tableId)));
+  void syncEngine.flush();
   return { ok: true };
 }
 

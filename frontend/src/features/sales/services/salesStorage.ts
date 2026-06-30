@@ -1,27 +1,69 @@
-import type { Sale } from "../types";
 import { apiFetch } from "@/lib/api";
-import { createApiStore } from "@/lib/apiStore";
+import {
+  createOfflineStore,
+  indexedDbPersistence,
+  initIndexedDbPersistence,
+  isOnline,
+} from "@/lib/offline";
 
-const store = createApiStore<Sale[]>({
-  fetchSnapshot: () => apiFetch<Sale[]>("/sales"),
+import type { Sale } from "../types";
+import { appendSale, replaceSaleId } from "./saleMutations";
+
+const STORAGE_KEY = "sales";
+
+const store = createOfflineStore<Sale[]>({
+  key: STORAGE_KEY,
   serverSnapshot: [],
   eventName: "restaurant-sales-change",
+  persistence: indexedDbPersistence,
 });
+
+export function replaceSalesFromServer(sales: Sale[]): void {
+  store.replace(
+    [...sales].sort(
+      (a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime(),
+    ),
+  );
+}
+
+export async function hydrateSalesIfEmpty(): Promise<void> {
+  await initIndexedDbPersistence();
+
+  if (!isOnline()) {
+    return;
+  }
+
+  if (store.getSnapshot().length > 0) {
+    return;
+  }
+
+  try {
+    const sales = await apiFetch<Sale[]>("/sales");
+    replaceSalesFromServer(sales);
+  } catch {
+    // Keep local cache until next successful hydrate.
+  }
+}
 
 export const subscribeSales = store.subscribe;
 export const getSalesSnapshot = store.getSnapshot;
 export const getSalesServerSnapshot = store.getServerSnapshot;
+export const isSalesLoaded = store.isLoaded;
 
 export function persistSales(_sales: Sale[]): void {
-  store.scheduleRefresh();
+  // Local cache is updated via mutate on writes; no-op for compatibility.
 }
 
 export function ensureWeeklyDemoSales(): void {
-  // demo data is seeded on the backend when empty
+  // Demo data is seeded on the backend when empty.
 }
 
-export function recordSale(_sale: Sale): void {
-  store.scheduleRefresh();
+export function recordSale(sale: Sale): void {
+  store.mutate((sales) => appendSale(sales, sale));
+}
+
+export function replaceLocalSaleId(oldId: string, newId: string): void {
+  store.mutate((sales) => replaceSaleId(sales, oldId, newId));
 }
 
 export function isSameLocalDay(isoDate: string, reference = new Date()): boolean {

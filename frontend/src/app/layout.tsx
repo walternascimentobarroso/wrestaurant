@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { SettingsProvider } from "@/features/settings/components/SettingsProvider";
+import { SyncProvider } from "@/features/sync/components/SyncProvider";
 import { brand } from "@/design-system";
 import { fraunces, manrope } from "@/lib/fonts";
 
@@ -33,7 +34,9 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <SettingsProvider>{children}</SettingsProvider>
+          <SettingsProvider>
+            <SyncProvider>{children}</SyncProvider>
+          </SettingsProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,0 +1,52 @@
+export type SyncStatus = "synced" | "pending" | "error";
+
+export interface SyncMeta {
+  updatedAt: string;
+  syncStatus: SyncStatus;
+  version: number;
+}
+
+export type SyncEntity =
+  | "tables"
+  | "products"
+  | "menuCatalog"
+  | "settings"
+  | "sales"
+  | "payables"
+  | "suppliers"
+  | "purchases"
+  | "stock"
+  | "checklists";
+
+export type SyncOperation = "create" | "update" | "delete";
+
+export interface SyncMutation {
+  id: string;
+  entity: SyncEntity;
+  operation: SyncOperation;
+  entityId: string | number;
+  payload: unknown;
+  createdAt: string;
+  retries: number;
+  lastError?: string;
+}
+
+export interface PersistenceAdapter {
+  get: <T>(key: string) => T | null;
+  set: <T>(key: string, value: T) => void;
+  remove: (key: string) => void;
+  keys: () => string[];
+}
+
+export interface OfflineStoreOptions<T> {
+  key: string;
+  serverSnapshot: T;
+  eventName: string;
+  persistence?: PersistenceAdapter;
+}
+
+export type SyncHandler = (mutation: SyncMutation) => Promise<void>;
+
+export const SYNC_MAX_RETRIES = 10;
+
+export const SYNC_BACKOFF_MS = [1000, 3000, 10000, 30000] as const;

@@ -191,19 +191,46 @@ export function remapPayloadCategoryId(oldId: string, newId: string): void {
 
 export function remapPayloadProductId(oldId: string, newId: string): void {
   const queue = readQueue().map((mutation) => {
-    if (mutation.entity !== "tables") {
-      return mutation;
+    if (mutation.entity === "tables") {
+      const payload = mutation.payload as { productId?: string };
+      if (payload.productId !== oldId) {
+        return mutation;
+      }
+
+      return {
+        ...mutation,
+        payload: { ...payload, productId: newId },
+      };
     }
 
-    const payload = mutation.payload as { productId?: string };
-    if (payload.productId !== oldId) {
-      return mutation;
+    if (mutation.entity === "products") {
+      const payload = mutation.payload as {
+        recipe?: Array<{ ingredientId?: string }>;
+      };
+      if (!Array.isArray(payload.recipe)) {
+        return mutation;
+      }
+
+      let changed = false;
+      const recipe = payload.recipe.map((line) => {
+        if (line.ingredientId !== oldId) {
+          return line;
+        }
+        changed = true;
+        return { ...line, ingredientId: newId };
+      });
+
+      if (!changed) {
+        return mutation;
+      }
+
+      return {
+        ...mutation,
+        payload: { ...payload, recipe },
+      };
     }
 
-    return {
-      ...mutation,
-      payload: { ...payload, productId: newId },
-    };
+    return mutation;
   });
 
   writeQueue(queue);

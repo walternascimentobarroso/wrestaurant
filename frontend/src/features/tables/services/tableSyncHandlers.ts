@@ -1,11 +1,20 @@
 import { apiFetch } from "@/lib/api";
-import { registerHandler, type SyncMutation } from "@/lib/offline";
+import { isTempId, registerHandler, type SyncMutation } from "@/lib/offline";
 
+import { resolveProductId } from "@/features/menu/services/productStorage";
 import { linkSaleToPaymentMutation } from "@/features/sales/services/salesSyncHandlers";
 
 import { isTempTableId } from "./tableMutations";
 import { replaceTempTableId, resolveTableId } from "./tableStorage";
 import type { TableWithDetails } from "../types";
+
+function resolveTableItemProductId(productId: string): string {
+  const resolved = resolveProductId(productId);
+  if (isTempId(resolved)) {
+    throw new Error("Produto ainda não sincronizado.");
+  }
+  return resolved;
+}
 
 async function handleTableMutation(mutation: SyncMutation): Promise<void> {
   const tableId = resolveTableId(Number(mutation.entityId));
@@ -15,13 +24,15 @@ async function handleTableMutation(mutation: SyncMutation): Promise<void> {
       const { productId } = mutation.payload as { productId: string };
       await apiFetch<TableWithDetails>(`/tables/${tableId}/items`, {
         method: "POST",
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({
+          productId: resolveTableItemProductId(productId),
+        }),
       });
       return;
     }
     case "removeItem": {
       const { productId } = mutation.payload as { productId: string };
-      await apiFetch<TableWithDetails>(`/tables/${tableId}/items/${productId}`, {
+      await apiFetch<TableWithDetails>(`/tables/${tableId}/items/${resolveTableItemProductId(productId)}`, {
         method: "PATCH",
       });
       return;

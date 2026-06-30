@@ -111,7 +111,26 @@ export function replaceProductId(
   oldId: string,
   newId: string,
 ): Product[] {
-  return products.map((product) =>
-    product.id === oldId ? { ...product, id: newId } : product,
-  );
+  return products.map((product) => {
+    const withId = product.id === oldId ? { ...product, id: newId } : product;
+
+    if (!product.recipe?.length) {
+      return withId;
+    }
+
+    let recipeChanged = false;
+    const recipe = product.recipe.map((line) => {
+      if (line.ingredientId !== oldId) {
+        return line;
+      }
+      recipeChanged = true;
+      return { ...line, ingredientId: newId };
+    });
+
+    if (!recipeChanged) {
+      return withId;
+    }
+
+    return { ...withId, recipe };
+  });
 }

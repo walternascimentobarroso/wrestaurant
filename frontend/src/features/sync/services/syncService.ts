@@ -3,7 +3,7 @@ import { hydrateChecklistsIfEmpty } from "@/features/checklists/services/checkli
 import { registerMenuCatalogSyncHandlers } from "@/features/menu/services/menuSyncHandlers";
 import { registerProductSyncHandlers } from "@/features/menu/services/productSyncHandlers";
 import { hydrateMenuCatalogIfEmpty } from "@/features/menu/services/menuCatalogStorage";
-import { hydrateProductsIfEmpty } from "@/features/menu/services/productStorage";
+import { hydrateProductsIfEmpty, repairProductTempIdReferences, repairPendingProductPayloadsFromCache } from "@/features/menu/services/productStorage";
 import { registerPayableSyncHandlers } from "@/features/payables/services/payableSyncHandlers";
 import { hydratePayablesIfEmpty } from "@/features/payables/services/payableStorage";
 import { registerPurchaseSyncHandlers } from "@/features/purchases/services/purchaseSyncHandlers";
@@ -108,12 +108,14 @@ export async function hydrateAll(): Promise<void> {
 
   if (isOnline()) {
     const hydrated = await hydrateAllFromSnapshot();
+    repairProductTempIdReferences();
     if (hydrated) {
       return;
     }
   }
 
   await hydrateAllFallback();
+  repairProductTempIdReferences();
 }
 
 export async function pullSyncDelta(): Promise<void> {
@@ -239,11 +241,13 @@ export function getSyncStatus(): {
 }
 
 export function retryFailed(): void {
+  repairPendingProductPayloadsFromCache();
   syncQueue.resetAllFailedRetries();
   void processQueue();
 }
 
 export function retryMutationById(mutationId: string): void {
+  repairPendingProductPayloadsFromCache();
   syncQueue.resetRetries(mutationId);
   void processQueue();
 }

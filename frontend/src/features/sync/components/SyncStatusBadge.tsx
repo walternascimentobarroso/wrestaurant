@@ -10,7 +10,9 @@ export function SyncStatusBadge() {
     online,
     pendingCount,
     errorCount,
+    pending,
     errors,
+    queueCount,
     retry,
     retryAll,
     discard,
@@ -33,10 +35,10 @@ export function SyncStatusBadge() {
   } else if (pendingCount > 0) {
     label = `${pendingCount} pendente${pendingCount > 1 ? "s" : ""}`;
     className =
-      "fixed bottom-3 right-3 z-50 cursor-default rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-900 shadow-sm";
+      "fixed bottom-3 right-3 z-50 cursor-pointer rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-900 shadow-sm hover:bg-amber-100";
   }
 
-  const isClickable = errorCount > 0;
+  const isClickable = queueCount > 0;
 
   const content = (
     <>
@@ -71,6 +73,7 @@ export function SyncStatusBadge() {
       <SyncErrorsDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        pending={pending}
         errors={errors}
         onRetry={retry}
         onRetryAll={retryAll}

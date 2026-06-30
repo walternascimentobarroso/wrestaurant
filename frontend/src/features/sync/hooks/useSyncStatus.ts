@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 import {
+  getConnectivityServerSnapshot,
   getConnectivitySnapshot,
   subscribeConnectivity,
   SYNC_MAX_RETRIES,
@@ -16,53 +17,27 @@ import {
   retryMutationById,
 } from "../services/syncService";
 
-interface SyncStatusState {
-  mutations: SyncMutation[];
-  online: boolean;
-}
-
-function readSyncStatus(): SyncStatusState {
-  return {
-    mutations: syncQueue.getAll(),
-    online: getConnectivitySnapshot(),
-  };
-}
-
-function countPending(mutations: SyncMutation[]): number {
-  return mutations.filter((mutation) => mutation.retries < SYNC_MAX_RETRIES).length;
-}
-
 function getFailedMutations(mutations: SyncMutation[]): SyncMutation[] {
   return mutations.filter((mutation) => mutation.retries >= SYNC_MAX_RETRIES);
 }
 
 export function useSyncStatus() {
-  const [status, setStatus] = useState(readSyncStatus);
+  const mutations = useSyncExternalStore(
+    syncQueue.subscribe,
+    syncQueue.getSnapshot,
+    syncQueue.getServerSnapshot,
+  );
 
-  useEffect(() => {
-    const sync = () => {
-      setStatus((previous) => {
-        const next = readSyncStatus();
-        if (
-          previous.online === next.online &&
-          previous.mutations === next.mutations
-        ) {
-          return previous;
-        }
-        return next;
-      });
-    };
+  const online = useSyncExternalStore(
+    subscribeConnectivity,
+    getConnectivitySnapshot,
+    getConnectivityServerSnapshot,
+  );
 
-    const unsubQueue = syncQueue.subscribe(sync);
-    const unsubOnline = subscribeConnectivity(sync);
-
-    return () => {
-      unsubQueue();
-      unsubOnline();
-    };
-  }, []);
-
-  const { mutations, online } = status;
+  const pending = useMemo(
+    () => mutations.filter((mutation) => mutation.retries < SYNC_MAX_RETRIES),
+    [mutations],
+  );
 
   const errors = useMemo(
     () => getFailedMutations(mutations),
@@ -83,9 +58,11 @@ export function useSyncStatus() {
 
   return {
     online,
-    pendingCount: countPending(mutations),
+    pendingCount: pending.length,
     errorCount: errors.length,
+    pending,
     errors,
+    queueCount: mutations.length,
     retry,
     retryAll,
     discard,

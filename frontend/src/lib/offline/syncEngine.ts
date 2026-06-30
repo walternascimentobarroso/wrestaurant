@@ -1,4 +1,5 @@
 import { isOnline } from "./connectivity";
+import { isTempId } from "./idGenerator";
 import * as syncQueueModule from "./syncQueue";
 import {
   SYNC_BACKOFF_MS,
@@ -38,12 +39,48 @@ function canProcess(mutation: SyncMutation): boolean {
   return Date.now() - lastAttempt >= delay;
 }
 
+function hasUnresolvedRecipeIngredients(mutation: SyncMutation): boolean {
+  if (mutation.entity !== "products") {
+    return false;
+  }
+
+  const recipe = (
+    mutation.payload as { recipe?: Array<{ ingredientId?: string }> }
+  ).recipe;
+  if (!recipe?.length) {
+    return false;
+  }
+
+  return recipe.some(
+    (line) => line.ingredientId !== undefined && isTempId(line.ingredientId),
+  );
+}
+
+function isIngredientCreateMutation(mutation: SyncMutation): boolean {
+  if (mutation.entity !== "products" || mutation.operation !== "create") {
+    return false;
+  }
+
+  return (mutation.payload as { kind?: string }).kind === "ingredient";
+}
+
 function findNextProcessable(queue: SyncMutation[]): SyncMutation | null {
+  for (const mutation of queue) {
+    if (isPermanentError(mutation) || !canProcess(mutation)) {
+      continue;
+    }
+    if (hasUnresolvedRecipeIngredients(mutation) && !isIngredientCreateMutation(mutation)) {
+      continue;
+    }
+    return mutation;
+  }
+
   for (const mutation of queue) {
     if (!isPermanentError(mutation) && canProcess(mutation)) {
       return mutation;
     }
   }
+
   return null;
 }
 
@@ -84,7 +121,7 @@ async function processQueueInternal(): Promise<void> {
           .find((item) => item.id === mutation.id);
 
         if (updated && isPermanentError(updated)) {
-          break;
+          continue;
         }
 
         const delay = getBackoffDelay(mutation.retries);

@@ -7,6 +7,7 @@ import {
   getItem,
   isOnline,
   isTempId,
+  setItem,
   syncEngine,
   syncQueue,
 } from "@/lib/offline";
@@ -22,6 +23,7 @@ import {
 import { applyPurchaseToProduct } from "@/features/purchases/services/purchaseMutations";
 
 const STORAGE_KEY = "products";
+const TEMP_ID_MAP_KEY = "product-temp-id-map";
 
 const store = createOfflineStore<Product[]>({
   key: STORAGE_KEY,
@@ -29,7 +31,59 @@ const store = createOfflineStore<Product[]>({
   eventName: "restaurant-products-change",
 });
 
-const tempIdMap = new Map<string, string>();
+function loadTempIdMap(): Map<string, string> {
+  const map = new Map<string, string>();
+  if (typeof window === "undefined") {
+    return map;
+  }
+
+  const stored = getItem<Record<string, string>>(TEMP_ID_MAP_KEY);
+  if (!stored) {
+    return map;
+  }
+
+  for (const [oldId, newId] of Object.entries(stored)) {
+    map.set(oldId, newId);
+  }
+  return map;
+}
+
+const tempIdMap = loadTempIdMap();
+
+function persistTempIdMap(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  setItem(TEMP_ID_MAP_KEY, Object.fromEntries(tempIdMap));
+}
+
+function repairTempIdReferences(): void {
+  if (tempIdMap.size === 0) {
+    return;
+  }
+
+  for (const [oldId, newId] of tempIdMap.entries()) {
+    syncQueue.remapPayloadProductId(oldId, newId);
+    remapProductIdInTables(oldId, newId);
+  }
+
+  if (!store.isLoaded()) {
+    return;
+  }
+
+  store.mutate((products) => {
+    let next = products;
+    for (const [oldId, newId] of tempIdMap.entries()) {
+      next = replaceProductId(next, oldId, newId);
+    }
+    return next;
+  });
+}
+
+export function repairProductTempIdReferences(): void {
+  repairTempIdReferences();
+  repairPendingProductPayloadsFromCache();
+}
 
 function enqueueAndFlush(
   mutation: Omit<
@@ -45,11 +99,80 @@ export function resolveProductId(productId: string): string {
   if (!isTempId(productId)) {
     return productId;
   }
-  return tempIdMap.get(productId) ?? productId;
+
+  const fromMemory = tempIdMap.get(productId);
+  if (fromMemory) {
+    return fromMemory;
+  }
+
+  const stored = getItem<Record<string, string>>(TEMP_ID_MAP_KEY);
+  const fromStorage = stored?.[productId];
+  if (fromStorage) {
+    tempIdMap.set(productId, fromStorage);
+    return fromStorage;
+  }
+
+  return productId;
+}
+
+export function repairPendingProductPayloadsFromCache(): void {
+  if (!store.isLoaded()) {
+    return;
+  }
+
+  const products = store.getSnapshot();
+
+  for (const mutation of syncQueue.getAll()) {
+    if (mutation.entity !== "products") {
+      continue;
+    }
+
+    if (mutation.operation !== "create" && mutation.operation !== "update") {
+      continue;
+    }
+
+    const entityId = String(mutation.entityId);
+    const local = products.find(
+      (product) => product.id === entityId || product.id === resolveProductId(entityId),
+    );
+    if (!local) {
+      continue;
+    }
+
+    const payload = mutation.payload as ProductCreateInput;
+    const recipe = local.recipe?.map((line) => ({
+      ingredientId: line.ingredientId,
+      quantity: line.quantity,
+      unit: line.unit,
+    }));
+
+    const nextPayload: ProductCreateInput = {
+      ...payload,
+      name: local.name,
+      price: local.price,
+      category: local.category,
+      subcategory: local.subcategory,
+      kind: local.kind,
+      recipe,
+      trackStock: local.trackStock,
+      stockQuantity: local.stockQuantity,
+      minStock: local.minStock,
+      stockUnit: local.stockUnit ?? "un",
+      packageSize: local.packageSize,
+      packageUnit: local.packageUnit,
+    };
+
+    if (JSON.stringify(payload) === JSON.stringify(nextPayload)) {
+      continue;
+    }
+
+    syncQueue.updateMutationPayload(mutation.id, nextPayload);
+  }
 }
 
 export function replaceTempProductId(oldId: string, newId: string): void {
   tempIdMap.set(oldId, newId);
+  persistTempIdMap();
   store.mutate((products) => replaceProductId(products, oldId, newId));
   syncQueue.remapEntityId("products", oldId, newId);
   syncQueue.remapPayloadProductId(oldId, newId);
@@ -57,7 +180,25 @@ export function replaceTempProductId(oldId: string, newId: string): void {
 }
 
 export function replaceProductsFromServer(products: Product[]): void {
-  store.replace(products);
+  const pendingCreateIds = new Set(
+    syncQueue
+      .getAll()
+      .filter((mutation) => mutation.entity === "products" && mutation.operation === "create")
+      .map((mutation) => String(mutation.entityId)),
+  );
+
+  if (pendingCreateIds.size === 0) {
+    store.replace(products);
+    return;
+  }
+
+  const local = store.isLoaded() ? store.getSnapshot() : [];
+  const pendingLocal = local.filter((product) => pendingCreateIds.has(product.id));
+  const merged = new Map(products.map((product) => [product.id, product]));
+  for (const product of pendingLocal) {
+    merged.set(product.id, product);
+  }
+  store.replace([...merged.values()]);
 }
 
 export async function hydrateProductsIfEmpty(): Promise<void> {

@@ -19,6 +19,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SyncStatusBadge } from "@/features/sync/components/SyncStatusBadge";
 import { brand } from "@/design-system";
 import { cn } from "@/lib/utils";
 
@@ -62,7 +63,8 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
   if (!isAuthenticated) {
     return (
       <div className="relative flex h-dvh flex-col items-center justify-center bg-background px-4">
-        <div className="absolute right-4 top-4">
+        <div className="absolute right-4 top-4 flex items-center gap-2">
+          <SyncStatusBadge />
           <ThemeToggle />
         </div>
 
@@ -103,7 +105,10 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
               </p>
               <h1 className="font-heading text-lg font-bold text-foreground">Administração</h1>
             </div>
-            <ThemeToggle />
+            <div className="flex shrink-0 items-center gap-2">
+              <SyncStatusBadge />
+              <ThemeToggle />
+            </div>
           </div>
         </div>
 

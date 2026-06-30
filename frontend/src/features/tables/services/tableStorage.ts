@@ -25,8 +25,10 @@ import {
   applyUpdateTable,
   generateTempTableId,
   isTempTableId,
+  mergeTableFromServer,
   replaceTableId,
   sortTables,
+  toStoredTable,
 } from "./tableMutations";
 
 const STORAGE_KEY = "tables";
@@ -90,6 +92,19 @@ export function replaceTempTableId(oldId: number, newId: number): void {
   syncQueue.remapEntityId("tables", oldId, newId);
 }
 
+export function applyTableFromServer(serverTable: TableWithDetails): void {
+  store.mutate((tables) => {
+    const index = tables.findIndex((entry) => entry.id === serverTable.id);
+    if (index === -1) {
+      return sortTables([...tables, toStoredTable(serverTable)]);
+    }
+
+    const next = [...tables];
+    next[index] = mergeTableFromServer(tables[index], serverTable);
+    return sortTables(next);
+  });
+}
+
 export function replaceTablesFromServer(tables: Table[]): void {
   store.replace(sortTables(tables));
 }
@@ -110,6 +125,10 @@ export async function hydrateTablesIfEmpty(): Promise<void> {
   } catch {
     // Cache stays empty; offline reads still work once populated.
   }
+}
+
+export function notifyTablesChanged(): void {
+  store.notify();
 }
 
 export const subscribeTables = store.subscribe;

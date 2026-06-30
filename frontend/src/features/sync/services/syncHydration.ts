@@ -21,8 +21,13 @@ import type { StockMovement } from "@/features/stock/types";
 import { replaceStockMovementsFromServer } from "@/features/stock/services/stockStorage";
 import type { Supplier } from "@/features/suppliers/types";
 import { replaceSuppliersFromServer } from "@/features/suppliers/services/supplierStorage";
-import { sortTables } from "@/features/tables/services/tableMutations";
-import { replaceTablesFromServer } from "@/features/tables/services/tableStorage";
+import {
+  mergeTablesFromServer,
+} from "@/features/tables/services/tableMutations";
+import {
+  getTablesSnapshot,
+  replaceTablesFromServer,
+} from "@/features/tables/services/tableStorage";
 import type { Product, TableWithDetails } from "@/features/tables/types";
 import { getItem } from "@/lib/offline/localPersistence";
 
@@ -129,7 +134,9 @@ function readList<T>(key: string): T[] {
 }
 
 export function applySyncSnapshot(snapshot: SyncSnapshotPayload): void {
-  replaceTablesFromServer(snapshot.tables);
+  replaceTablesFromServer(
+    mergeTablesFromServer(getTablesSnapshot(), snapshot.tables),
+  );
   replaceProductsFromServer(snapshot.products);
   replaceSettingsFromServer(snapshot.settings);
   replaceMenuCatalogFromServer(snapshot.menuCatalog);
@@ -149,9 +156,7 @@ export function applySyncSnapshot(snapshot: SyncSnapshotPayload): void {
 
 export function applySyncDelta(delta: SyncDeltaPayload): void {
   if (delta.tables.length > 0) {
-    const merged = sortTables(
-      mergeById(readList<TableWithDetails>("tables"), delta.tables),
-    );
+    const merged = mergeTablesFromServer(getTablesSnapshot(), delta.tables);
     replaceTablesFromServer(merged);
   }
 

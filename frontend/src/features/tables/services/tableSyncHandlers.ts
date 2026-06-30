@@ -5,7 +5,7 @@ import { resolveProductId } from "@/features/menu/services/productStorage";
 import { linkSaleToPaymentMutation } from "@/features/sales/services/salesSyncHandlers";
 
 import { isTempTableId } from "./tableMutations";
-import { replaceTempTableId, resolveTableId } from "./tableStorage";
+import { applyTableFromServer, replaceTempTableId, resolveTableId } from "./tableStorage";
 import type { TableWithDetails } from "../types";
 
 function resolveTableItemProductId(productId: string): string {
@@ -22,25 +22,28 @@ async function handleTableMutation(mutation: SyncMutation): Promise<void> {
   switch (mutation.operation) {
     case "addItem": {
       const { productId } = mutation.payload as { productId: string };
-      await apiFetch<TableWithDetails>(`/tables/${tableId}/items`, {
+      const updated = await apiFetch<TableWithDetails>(`/tables/${tableId}/items`, {
         method: "POST",
         body: JSON.stringify({
           productId: resolveTableItemProductId(productId),
         }),
       });
+      applyTableFromServer(updated);
       return;
     }
     case "removeItem": {
       const { productId } = mutation.payload as { productId: string };
-      await apiFetch<TableWithDetails>(`/tables/${tableId}/items/${resolveTableItemProductId(productId)}`, {
+      const updated = await apiFetch<TableWithDetails>(`/tables/${tableId}/items/${resolveTableItemProductId(productId)}`, {
         method: "PATCH",
       });
+      applyTableFromServer(updated);
       return;
     }
     case "clearTable": {
-      await apiFetch<TableWithDetails>(`/tables/${tableId}/items`, {
+      const updated = await apiFetch<TableWithDetails>(`/tables/${tableId}/items`, {
         method: "DELETE",
       });
+      applyTableFromServer(updated);
       return;
     }
     case "payment": {

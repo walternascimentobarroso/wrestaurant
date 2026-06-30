@@ -1,4 +1,75 @@
-import type { Table, TableCategory } from "../types";
+import { SYNC_MAX_RETRIES, syncQueue } from "@/lib/offline";
+
+import type { Table, TableCategory, TableOrderItem, TableWithDetails } from "../types";
+
+function countTableItems(items: TableOrderItem[]): number {
+  return items.reduce((count, item) => count + item.quantity, 0);
+}
+
+export function toStoredTable(table: Table | TableWithDetails): Table {
+  const { total: _total, itemCount: _itemCount, ...stored } = table as TableWithDetails;
+  return stored;
+}
+
+function hasPendingTableMutations(tableId: number): boolean {
+  return syncQueue.getAll().some(
+    (mutation) =>
+      mutation.entity === "tables" &&
+      Number(mutation.entityId) === tableId &&
+      mutation.retries < SYNC_MAX_RETRIES,
+  );
+}
+
+export function mergeTableFromServer(local: Table, incoming: TableWithDetails): Table {
+  const storedIncoming = toStoredTable(incoming);
+
+  if (hasPendingTableMutations(local.id)) {
+    return local;
+  }
+
+  const localItemCount = countTableItems(local.items);
+  const incomingItemCount = countTableItems(storedIncoming.items);
+
+  if (localItemCount > incomingItemCount) {
+    return {
+      ...storedIncoming,
+      items: local.items,
+      status: local.status,
+      openedAt: local.openedAt,
+    };
+  }
+
+  return storedIncoming;
+}
+
+export function mergeTablesFromServer(
+  local: Table[],
+  incoming: TableWithDetails[],
+): Table[] {
+  const incomingById = new Map(incoming.map((table) => [table.id, table]));
+  const mergedIds = new Set<number>();
+  const merged: Table[] = [];
+
+  for (const localTable of local) {
+    const serverTable = incomingById.get(localTable.id);
+    if (serverTable) {
+      merged.push(mergeTableFromServer(localTable, serverTable));
+      mergedIds.add(localTable.id);
+      continue;
+    }
+
+    merged.push(localTable);
+    mergedIds.add(localTable.id);
+  }
+
+  for (const serverTable of incoming) {
+    if (!mergedIds.has(serverTable.id)) {
+      merged.push(toStoredTable(serverTable));
+    }
+  }
+
+  return sortTables(merged);
+}
 
 export function isTempTableId(id: number): boolean {
   return id < 0;

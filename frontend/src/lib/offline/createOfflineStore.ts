@@ -110,12 +110,17 @@ export function createOfflineStore<T>(options: OfflineStoreOptions<T>) {
     emit();
   }
 
+  function notify(): void {
+    emit();
+  }
+
   return {
     subscribe,
     getSnapshot,
     getServerSnapshot,
     mutate,
     replace,
+    notify,
     isLoaded: () => loaded,
     getError: () => error,
   };

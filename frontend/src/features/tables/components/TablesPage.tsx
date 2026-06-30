@@ -1,5 +1,8 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+
 import { AppHeaderActions } from "@/components/app-header-actions";
 import { brand } from "@/design-system";
 import { ChecklistIncompleteBanner } from "@/features/checklists/components/ChecklistIncompleteBanner";
@@ -7,10 +10,18 @@ import { ChecklistIncompleteBanner } from "@/features/checklists/components/Chec
 import { TABLE_CATEGORY_CONFIG } from "../data/initialTables";
 import { TABLE_SECTION_LABELS } from "../types";
 import { useTableStore } from "../hooks/useTableStore";
+import { notifyTablesChanged } from "../services/tableStorage";
 import { TableCard } from "./TableCard";
 
 export function TablesPage() {
+  const pathname = usePathname();
   const { tables, isLoaded } = useTableStore();
+
+  useEffect(() => {
+    if (pathname === "/") {
+      notifyTablesChanged();
+    }
+  }, [pathname]);
 
   if (!isLoaded) {
     return (

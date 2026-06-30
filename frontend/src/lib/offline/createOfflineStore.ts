@@ -41,7 +41,6 @@ export function createOfflineStore<T>(options: OfflineStoreOptions<T>) {
     if (initStarted || typeof window === "undefined" || !persistence.init) {
       if (!loaded && !persistence.init) {
         loadFromPersistence();
-        emit();
       }
       return;
     }
@@ -62,7 +61,6 @@ export function createOfflineStore<T>(options: OfflineStoreOptions<T>) {
         ensurePersistenceReady();
       } else {
         loadFromPersistence();
-        emit();
       }
     }
     return () => {

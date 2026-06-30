@@ -1,9 +1,9 @@
-const CACHE_NAME = "restaurant-static-v1";
-const STATIC_ASSETS = ["/", "/manifest.json", "/file.svg", "/window.svg"];
+const CACHE_NAME = "restaurant-static-v2";
+const PRECACHE_ASSETS = ["/manifest.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS)),
   );
   self.skipWaiting();
 });
@@ -21,6 +21,14 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+function isNavigationRequest(request) {
+  return request.mode === "navigate";
+}
+
+function isNextAsset(url) {
+  return url.pathname.startsWith("/_next/");
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -33,23 +41,26 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  if (isNavigationRequest(request) || isNextAsset(url)) {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request).then((cached) => cached ?? Response.error())),
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
-
-      return fetch(request)
+      const networkFetch = fetch(request)
         .then((response) => {
-          if (!response.ok || response.type === "opaque") {
-            return response;
+          if (response.ok && response.type !== "opaque") {
+            const copy = response.clone();
+            void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
-
-          const copy = response.clone();
-          void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           return response;
         })
         .catch(() => cached ?? Response.error());
+
+      return cached ?? networkFetch;
     }),
   );
 });

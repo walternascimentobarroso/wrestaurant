@@ -11,7 +11,11 @@ const QUEUE_KEY = "sync-queue";
 type Listener = () => void;
 
 const listeners = new Set<Listener>();
-const serverSnapshot: SyncMutation[] = [];
+const EMPTY_QUEUE: SyncMutation[] = [];
+const serverSnapshot: SyncMutation[] = EMPTY_QUEUE;
+let cache: SyncMutation[] = EMPTY_QUEUE;
+let loaded = false;
+let version = 0;
 
 function emit(): void {
   for (const listener of listeners) {
@@ -19,12 +23,34 @@ function emit(): void {
   }
 }
 
+function loadCache(): void {
+  if (loaded || typeof window === "undefined") {
+    return;
+  }
+
+  const stored = getItem<SyncMutation[]>(QUEUE_KEY);
+  if (stored !== null) {
+    cache = stored;
+    version += 1;
+  }
+  loaded = true;
+}
+
 function readQueue(): SyncMutation[] {
-  return getItem<SyncMutation[]>(QUEUE_KEY) ?? [];
+  loadCache();
+  return cache;
 }
 
 function writeQueue(queue: SyncMutation[]): void {
-  setItem(QUEUE_KEY, queue);
+  const next = queue.length === 0 ? EMPTY_QUEUE : queue;
+  if (next === cache) {
+    return;
+  }
+
+  cache = next;
+  loaded = true;
+  version += 1;
+  setItem(QUEUE_KEY, next);
   emit();
 }
 
@@ -42,9 +68,7 @@ export function enqueue(
     retries: 0,
   };
 
-  const queue = readQueue();
-  queue.push(entry);
-  writeQueue(queue);
+  writeQueue([...readQueue(), entry]);
   return entry;
 }
 
@@ -212,6 +236,7 @@ export function resetAllFailedRetries(): void {
 }
 
 export function subscribe(listener: Listener): () => void {
+  loadCache();
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -219,11 +244,24 @@ export function subscribe(listener: Listener): () => void {
 }
 
 export function getSnapshot(): SyncMutation[] {
-  return readQueue();
+  if (typeof window === "undefined") {
+    return serverSnapshot;
+  }
+  loadCache();
+  return cache;
 }
 
 export function getServerSnapshot(): SyncMutation[] {
   return serverSnapshot;
+}
+
+export function getVersionSnapshot(): number {
+  loadCache();
+  return version;
+}
+
+export function getVersionServerSnapshot(): number {
+  return 0;
 }
 
 export const syncQueue = {
@@ -244,6 +282,8 @@ export const syncQueue = {
   subscribe,
   getSnapshot,
   getServerSnapshot,
+  getVersionSnapshot,
+  getVersionServerSnapshot,
 };
 
 export type { SyncEntity };

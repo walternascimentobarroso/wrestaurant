@@ -200,7 +200,15 @@ export function initSync(): () => void {
   startDeltaPolling();
 
   if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-    void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    if (process.env.NODE_ENV === "development") {
+      void navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          void registration.unregister();
+        }
+      });
+    } else {
+      void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
   }
 
   return () => {

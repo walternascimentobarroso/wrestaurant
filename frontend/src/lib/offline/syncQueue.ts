@@ -117,6 +117,74 @@ export function remapEntityId(
   writeQueue(queue);
 }
 
+export function updateMutationPayload(id: string, payload: unknown): void {
+  const queue = readQueue().map((mutation) => {
+    if (mutation.id !== id) {
+      return mutation;
+    }
+
+    return {
+      ...mutation,
+      payload,
+    };
+  });
+
+  writeQueue(queue);
+}
+
+export function findPendingMutation(
+  entity: SyncEntity,
+  entityId: string | number,
+  operation: SyncMutation["operation"],
+): SyncMutation | undefined {
+  return readQueue().find(
+    (mutation) =>
+      mutation.entity === entity &&
+      mutation.entityId === entityId &&
+      mutation.operation === operation,
+  );
+}
+
+export function remapPayloadCategoryId(oldId: string, newId: string): void {
+  const queue = readQueue().map((mutation) => {
+    if (mutation.entity !== "menuCatalog") {
+      return mutation;
+    }
+
+    const payload = mutation.payload as { categoryId?: string };
+    if (payload.categoryId !== oldId) {
+      return mutation;
+    }
+
+    return {
+      ...mutation,
+      payload: { ...payload, categoryId: newId },
+    };
+  });
+
+  writeQueue(queue);
+}
+
+export function remapPayloadProductId(oldId: string, newId: string): void {
+  const queue = readQueue().map((mutation) => {
+    if (mutation.entity !== "tables") {
+      return mutation;
+    }
+
+    const payload = mutation.payload as { productId?: string };
+    if (payload.productId !== oldId) {
+      return mutation;
+    }
+
+    return {
+      ...mutation,
+      payload: { ...payload, productId: newId },
+    };
+  });
+
+  writeQueue(queue);
+}
+
 export function removeMutationsForEntityId(
   entity: SyncEntity,
   entityId: string | number,
@@ -167,6 +235,10 @@ export const syncQueue = {
   markRetry,
   resetRetries,
   remapEntityId,
+  remapPayloadCategoryId,
+  remapPayloadProductId,
+  updateMutationPayload,
+  findPendingMutation,
   removeMutationsForEntityId,
   resetAllFailedRetries,
   subscribe,

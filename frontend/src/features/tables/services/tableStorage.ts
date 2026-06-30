@@ -253,3 +253,18 @@ export async function deleteTableApi(id: number): Promise<void> {
     payload: {},
   });
 }
+
+export function remapProductIdInTables(oldProductId: string, newProductId: string): void {
+  store.mutate((tables) =>
+    sortTables(
+      tables.map((table) => ({
+        ...table,
+        items: table.items.map((item) =>
+          item.productId === oldProductId
+            ? { ...item, productId: newProductId }
+            : item,
+        ),
+      })),
+    ),
+  );
+}

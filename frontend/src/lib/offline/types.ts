@@ -29,12 +29,21 @@ export type TableSyncOperation =
 
 export type SettingsSyncOperation = "updateCurrency";
 
+export type MenuCatalogSyncOperation =
+  | "createCategory"
+  | "updateCategory"
+  | "deleteCategory"
+  | "createSubcategory"
+  | "updateSubcategory"
+  | "deleteSubcategory";
+
 export type SyncOperation =
   | "create"
   | "update"
   | "delete"
   | TableSyncOperation
-  | SettingsSyncOperation;
+  | SettingsSyncOperation
+  | MenuCatalogSyncOperation;
 
 export interface SyncMutation {
   id: string;

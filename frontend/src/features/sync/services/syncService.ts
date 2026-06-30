@@ -1,3 +1,5 @@
+import { registerMenuCatalogSyncHandlers } from "@/features/menu/services/menuSyncHandlers";
+import { registerProductSyncHandlers } from "@/features/menu/services/productSyncHandlers";
 import { hydrateMenuCatalogIfEmpty } from "@/features/menu/services/menuCatalogStorage";
 import { hydrateProductsIfEmpty } from "@/features/menu/services/productStorage";
 import { hydrateSettingsIfEmpty } from "@/features/settings/services/settingsStorage";
@@ -37,6 +39,8 @@ function registerSyncHandlers(): void {
   }
 
   registerTableSyncHandlers();
+  registerProductSyncHandlers();
+  registerMenuCatalogSyncHandlers();
   registerHandler("settings", handleSettingsMutation);
   handlersRegistered = true;
 }

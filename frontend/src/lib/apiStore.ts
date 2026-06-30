@@ -1,5 +1,25 @@
 type Listener = () => void;
 
+const INITIAL_LOAD_RETRY_DELAYS_MS = [0, 300, 800] as const;
+
+async function fetchWithRetry<T>(fetchSnapshot: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+
+  for (const delay of INITIAL_LOAD_RETRY_DELAYS_MS) {
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    try {
+      return await fetchSnapshot();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
 export function createApiStore<T>(options: {
   fetchSnapshot: () => Promise<T>;
   serverSnapshot: T;
@@ -7,6 +27,7 @@ export function createApiStore<T>(options: {
 }) {
   let cache: T = options.serverSnapshot;
   let loaded = false;
+  let error: unknown = null;
   let loading: Promise<void> | null = null;
   const listeners = new Set<Listener>();
 
@@ -19,16 +40,27 @@ export function createApiStore<T>(options: {
     }
   }
 
+  function applyData(data: T) {
+    cache = data;
+    loaded = true;
+    error = null;
+    emit();
+  }
+
   async function refresh(): Promise<T> {
     if (typeof window === "undefined") {
       return options.serverSnapshot;
     }
 
-    const data = await options.fetchSnapshot();
-    cache = data;
-    loaded = true;
-    emit();
-    return data;
+    try {
+      const data = await options.fetchSnapshot();
+      applyData(data);
+      return data;
+    } catch (err) {
+      error = err;
+      emit();
+      throw err;
+    }
   }
 
   function ensureLoaded() {
@@ -36,8 +68,14 @@ export function createApiStore<T>(options: {
       return;
     }
 
-    loading = refresh()
-      .then(() => undefined)
+    loading = fetchWithRetry(options.fetchSnapshot)
+      .then((data) => {
+        applyData(data);
+      })
+      .catch((err) => {
+        error = err;
+        emit();
+      })
       .finally(() => {
         loading = null;
       });
@@ -48,7 +86,7 @@ export function createApiStore<T>(options: {
     ensureLoaded();
 
     const storageHandler = () => {
-      void refresh();
+      void refresh().catch(() => undefined);
     };
 
     window.addEventListener(options.eventName, storageHandler);
@@ -67,13 +105,21 @@ export function createApiStore<T>(options: {
     return options.serverSnapshot;
   }
 
+  function scheduleRefresh(): void {
+    void refresh().catch(() => undefined);
+  }
+
   return {
     subscribe,
     getSnapshot,
     getServerSnapshot,
+    isLoaded: () => loaded,
+    getError: () => error,
     refresh,
+    scheduleRefresh,
     invalidate() {
       loaded = false;
+      error = null;
       ensureLoaded();
     },
   };

@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Restaurant API"
     database_url: str = "postgresql://postgres:postgres@db:5432/restaurant"
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     admin_password: str = "admin123"
     secret_key: str = "change-me-in-production"
     access_token_expire_minutes: int = 480

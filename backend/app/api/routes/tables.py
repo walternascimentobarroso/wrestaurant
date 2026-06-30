@@ -41,7 +41,12 @@ def _get_table(db: Session, table_id: int) -> RestaurantTable:
 
 @router.get("", response_model=list[TableWithDetailsRead])
 def list_tables(db: Session = Depends(get_db_session)) -> list[TableWithDetailsRead]:
-    tables = db.query(RestaurantTable).options(joinedload(RestaurantTable.order_items)).all()
+    tables = (
+        db.query(RestaurantTable)
+        .options(joinedload(RestaurantTable.order_items))
+        .order_by(RestaurantTable.category, RestaurantTable.number)
+        .all()
+    )
     products = db.query(Product).all()
     return [table_with_details(table, products) for table in tables]
 

@@ -17,7 +17,7 @@ export async function refreshMenuCatalog(): Promise<MenuCategory[]> {
 }
 
 export function persistMenuCatalog(_categories: MenuCategory[]): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export function getCategoryNames(categories: MenuCategory[]): string[] {

@@ -13,7 +13,7 @@ export const getSuppliersSnapshot = store.getSnapshot;
 export const getSuppliersServerSnapshot = store.getServerSnapshot;
 
 export function persistSuppliers(_suppliers: Supplier[]): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export async function createSupplierApi(body: Record<string, unknown>): Promise<Supplier> {

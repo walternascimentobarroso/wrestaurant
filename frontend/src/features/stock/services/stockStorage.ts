@@ -13,11 +13,11 @@ export const getStockMovementsSnapshot = store.getSnapshot;
 export const getStockMovementsServerSnapshot = store.getServerSnapshot;
 
 export function persistStockMovements(_movements: StockMovement[]): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export function appendStockMovements(_entries: StockMovement[]): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export async function adjustStockApi(body: {

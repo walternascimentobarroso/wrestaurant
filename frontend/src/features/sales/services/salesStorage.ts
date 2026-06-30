@@ -13,7 +13,7 @@ export const getSalesSnapshot = store.getSnapshot;
 export const getSalesServerSnapshot = store.getServerSnapshot;
 
 export function persistSales(_sales: Sale[]): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export function ensureWeeklyDemoSales(): void {
@@ -21,7 +21,7 @@ export function ensureWeeklyDemoSales(): void {
 }
 
 export function recordSale(_sale: Sale): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export function isSameLocalDay(isoDate: string, reference = new Date()): boolean {

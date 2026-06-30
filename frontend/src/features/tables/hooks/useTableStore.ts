@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/api";
 import {
   getProductsServerSnapshot,
   getProductsSnapshot,
+  isProductsLoaded,
   subscribeProducts,
 } from "@/features/menu/services/productStorage";
 import type { PaymentDetails } from "@/features/sales/types";
@@ -16,6 +17,7 @@ import {
   clearTableApi,
   getTablesServerSnapshot,
   getTablesSnapshot,
+  isTablesLoaded,
   receivePaymentApi,
   removeTableItemApi,
   subscribeTables,
@@ -103,7 +105,7 @@ export function useTableStore() {
 
   return {
     tables: enrichedTables,
-    isLoaded: true,
+    isLoaded: isTablesLoaded() && isProductsLoaded(),
     getTable,
     addProduct,
     removeProduct,

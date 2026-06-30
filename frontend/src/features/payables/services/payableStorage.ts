@@ -13,7 +13,7 @@ export const getPayablesSnapshot = store.getSnapshot;
 export const getPayablesServerSnapshot = store.getServerSnapshot;
 
 export function persistPayables(_payables: Payable[]): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export async function createPayableApi(body: Record<string, unknown>): Promise<Payable> {

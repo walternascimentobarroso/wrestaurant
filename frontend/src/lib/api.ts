@@ -1,4 +1,16 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+function getApiBaseUrl(): string {
+  // Browser: same-origin proxy (next.config rewrites) avoids CORS and extension interference.
+  if (typeof window !== "undefined") {
+    return "";
+  }
+
+  return (
+    process.env.API_URL ??
+    process.env.BACKEND_URL ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    "http://localhost:8000"
+  );
+}
 
 const AUTH_TOKEN_KEY = "restaurant-api-auth-token";
 
@@ -42,10 +54,21 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_URL}/api${path}`, {
-    ...init,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${getApiBaseUrl()}/api${path}`, {
+      ...init,
+      headers,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message === "Failed to fetch"
+        ? "Não foi possível conectar à API. Verifique se o backend está rodando."
+        : error instanceof Error
+          ? error.message
+          : "Erro de rede";
+    throw new ApiError(message, 0);
+  }
 
   if (!response.ok) {
     let detail = `HTTP ${response.status}`;

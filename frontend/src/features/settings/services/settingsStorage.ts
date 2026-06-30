@@ -13,7 +13,7 @@ export const getSettingsSnapshot = store.getSnapshot;
 export const getSettingsServerSnapshot = store.getServerSnapshot;
 
 export function persistSettings(_settings: AppSettings): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export async function persistCurrency(currency: AppSettings["currency"]): Promise<void> {

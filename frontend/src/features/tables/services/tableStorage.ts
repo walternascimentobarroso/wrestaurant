@@ -4,8 +4,17 @@ import { createApiStore } from "@/lib/apiStore";
 
 type TableWithDetails = Table & { total: number; itemCount: number };
 
+function sortTables(tables: TableWithDetails[]): TableWithDetails[] {
+  return [...tables].sort((a, b) => {
+    if (a.category !== b.category) {
+      return a.category.localeCompare(b.category);
+    }
+    return a.number - b.number;
+  });
+}
+
 const store = createApiStore<TableWithDetails[]>({
-  fetchSnapshot: () => apiFetch<TableWithDetails[]>("/tables"),
+  fetchSnapshot: async () => sortTables(await apiFetch<TableWithDetails[]>("/tables")),
   serverSnapshot: [],
   eventName: "restaurant-tables-change",
 });
@@ -13,6 +22,7 @@ const store = createApiStore<TableWithDetails[]>({
 export const subscribeTables = store.subscribe;
 export const getTablesSnapshot = (): Table[] => store.getSnapshot();
 export const getTablesServerSnapshot = store.getServerSnapshot;
+export const isTablesLoaded = store.isLoaded;
 
 export async function refreshTables(): Promise<TableWithDetails[]> {
   return store.refresh();
@@ -23,7 +33,7 @@ export function loadTables(): Table[] {
 }
 
 export function persistTables(_tables: Table[]): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export function calculateTableTotal(

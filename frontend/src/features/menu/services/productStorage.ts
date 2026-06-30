@@ -11,13 +11,14 @@ const store = createApiStore<Product[]>({
 export const subscribeProducts = store.subscribe;
 export const getProductsSnapshot = store.getSnapshot;
 export const getProductsServerSnapshot = store.getServerSnapshot;
+export const isProductsLoaded = store.isLoaded;
 
 export async function refreshProducts(): Promise<Product[]> {
   return store.refresh();
 }
 
 export function persistProducts(_products: Product[]): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export function countProductsByCategory(products: Product[], categoryName: string): number {

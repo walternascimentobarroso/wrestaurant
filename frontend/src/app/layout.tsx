@@ -22,7 +22,10 @@ export default function RootLayout({
       className={`${fraunces.variable} ${manrope.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col font-sans">
+      <body
+        className="flex min-h-full flex-col font-sans"
+        suppressHydrationWarning
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

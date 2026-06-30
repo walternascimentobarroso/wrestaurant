@@ -13,11 +13,11 @@ export const getPurchasesSnapshot = store.getSnapshot;
 export const getPurchasesServerSnapshot = store.getServerSnapshot;
 
 export function persistPurchases(_records: PurchaseRecord[]): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export function appendPurchaseRecord(_record: PurchaseRecord): void {
-  void store.refresh();
+  store.scheduleRefresh();
 }
 
 export async function recordPurchaseApi(body: Record<string, unknown>): Promise<PurchaseRecord> {

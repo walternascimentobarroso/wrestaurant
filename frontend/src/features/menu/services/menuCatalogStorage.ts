@@ -1,23 +1,49 @@
 import type { MenuCategory } from "../types";
 import { apiFetch } from "@/lib/api";
-import { createApiStore } from "@/lib/apiStore";
+import { createOfflineStore, getItem, isOnline } from "@/lib/offline";
 
-const store = createApiStore<MenuCategory[]>({
-  fetchSnapshot: () => apiFetch<MenuCategory[]>("/menu/categories"),
+const STORAGE_KEY = "menu-catalog";
+
+const store = createOfflineStore<MenuCategory[]>({
+  key: STORAGE_KEY,
   serverSnapshot: [],
   eventName: "restaurant-menu-catalog-change",
 });
+
+export async function hydrateMenuCatalogIfEmpty(): Promise<void> {
+  if (!isOnline()) {
+    return;
+  }
+
+  const stored = getItem<MenuCategory[]>(STORAGE_KEY);
+  if (stored !== null && stored.length > 0) {
+    return;
+  }
+
+  try {
+    const categories = await apiFetch<MenuCategory[]>("/menu/categories");
+    store.replace(categories);
+  } catch {
+    // Keep empty cache until next successful hydrate.
+  }
+}
 
 export const subscribeMenuCatalog = store.subscribe;
 export const getMenuCatalogSnapshot = store.getSnapshot;
 export const getMenuCatalogServerSnapshot = store.getServerSnapshot;
 
 export async function refreshMenuCatalog(): Promise<MenuCategory[]> {
-  return store.refresh();
+  if (!isOnline()) {
+    return store.getSnapshot();
+  }
+
+  const categories = await apiFetch<MenuCategory[]>("/menu/categories");
+  store.replace(categories);
+  return categories;
 }
 
 export function persistMenuCatalog(_categories: MenuCategory[]): void {
-  store.scheduleRefresh();
+  // Local cache is updated on writes in phase 2; no-op for compatibility.
 }
 
 export function getCategoryNames(categories: MenuCategory[]): string[] {
@@ -51,7 +77,7 @@ export async function addCategoryApi(name: string): Promise<MenuCategory> {
     method: "POST",
     body: JSON.stringify({ name }),
   });
-  await store.refresh();
+  store.mutate((categories) => [...categories, category]);
   return category;
 }
 
@@ -60,13 +86,15 @@ export async function updateCategoryApi(id: string, name: string): Promise<MenuC
     method: "PATCH",
     body: JSON.stringify({ name }),
   });
-  await store.refresh();
+  store.mutate((categories) =>
+    categories.map((entry) => (entry.id === id ? category : entry)),
+  );
   return category;
 }
 
 export async function deleteCategoryApi(id: string): Promise<void> {
   await apiFetch<void>(`/menu/categories/${id}`, { method: "DELETE" });
-  await store.refresh();
+  store.mutate((categories) => categories.filter((entry) => entry.id !== id));
 }
 
 export async function addSubcategoryApi(
@@ -77,7 +105,9 @@ export async function addSubcategoryApi(
     method: "POST",
     body: JSON.stringify({ name }),
   });
-  await store.refresh();
+  store.mutate((categories) =>
+    categories.map((entry) => (entry.id === categoryId ? category : entry)),
+  );
   return category;
 }
 
@@ -86,11 +116,13 @@ export async function updateSubcategoryApi(id: string, name: string): Promise<Me
     method: "PATCH",
     body: JSON.stringify({ name }),
   });
-  await store.refresh();
+  store.mutate((categories) =>
+    categories.map((entry) => (entry.id === category.id ? category : entry)),
+  );
   return category;
 }
 
 export async function deleteSubcategoryApi(id: string): Promise<void> {
   await apiFetch<void>(`/menu/subcategories/${id}`, { method: "DELETE" });
-  await store.refresh();
+  await refreshMenuCatalog();
 }

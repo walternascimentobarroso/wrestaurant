@@ -18,7 +18,23 @@ export type SyncEntity =
   | "stock"
   | "checklists";
 
-export type SyncOperation = "create" | "update" | "delete";
+export type TableSyncOperation =
+  | "addItem"
+  | "removeItem"
+  | "clearTable"
+  | "payment"
+  | "createTable"
+  | "updateTable"
+  | "deleteTable";
+
+export type SettingsSyncOperation = "updateCurrency";
+
+export type SyncOperation =
+  | "create"
+  | "update"
+  | "delete"
+  | TableSyncOperation
+  | SettingsSyncOperation;
 
 export interface SyncMutation {
   id: string;

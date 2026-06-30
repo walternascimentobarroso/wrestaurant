@@ -1,23 +1,109 @@
-import type { Table, TableOrderItem } from "../types";
+import type { Product, Table, TableOrderItem, TableWithDetails } from "../types";
 import { apiFetch } from "@/lib/api";
-import { createApiStore } from "@/lib/apiStore";
+import {
+  createOfflineStore,
+  getItem,
+  isOnline,
+  syncEngine,
+  syncQueue,
+} from "@/lib/offline";
 
-type TableWithDetails = Table & { total: number; itemCount: number };
+import {
+  applyAddItem,
+  applyClearTable,
+  applyCreateTable,
+  applyDeleteTable,
+  applyPayment,
+  applyRemoveItem,
+  applyUpdateTable,
+  generateTempTableId,
+  isTempTableId,
+  replaceTableId,
+  sortTables,
+} from "./tableMutations";
 
-function sortTables(tables: TableWithDetails[]): TableWithDetails[] {
-  return [...tables].sort((a, b) => {
-    if (a.category !== b.category) {
-      return a.category.localeCompare(b.category);
-    }
-    return a.number - b.number;
-  });
-}
+const STORAGE_KEY = "tables";
 
-const store = createApiStore<TableWithDetails[]>({
-  fetchSnapshot: async () => sortTables(await apiFetch<TableWithDetails[]>("/tables")),
+const store = createOfflineStore<Table[]>({
+  key: STORAGE_KEY,
   serverSnapshot: [],
   eventName: "restaurant-tables-change",
 });
+
+const tempIdMap = new Map<number, number>();
+
+function enqueueAndFlush(
+  mutation: Omit<
+    Parameters<typeof syncQueue.enqueue>[0],
+    "id" | "createdAt" | "retries"
+  >,
+): void {
+  syncQueue.enqueue(mutation);
+  void syncEngine.flush();
+}
+
+function getProductsForEnrichment(): Product[] {
+  try {
+    return getItem<Product[]>("products") ?? [];
+  } catch {
+    return [];
+  }
+}
+
+function enrichTable(table: Table, products: Product[]): TableWithDetails {
+  return {
+    ...table,
+    total: calculateTableTotal(table.items, products),
+    itemCount: countTableItems(table.items),
+  };
+}
+
+function findTable(tableId: number): Table | undefined {
+  return store.getSnapshot().find((table) => table.id === tableId);
+}
+
+function getEnrichedTable(tableId: number): TableWithDetails {
+  const table = findTable(tableId);
+  if (!table) {
+    throw new Error("Mesa não encontrada.");
+  }
+  return enrichTable(table, getProductsForEnrichment());
+}
+
+export function resolveTableId(tableId: number): number {
+  if (!isTempTableId(tableId)) {
+    return tableId;
+  }
+  return tempIdMap.get(tableId) ?? tableId;
+}
+
+export function replaceTempTableId(oldId: number, newId: number): void {
+  tempIdMap.set(oldId, newId);
+  store.mutate((tables) => sortTables(replaceTableId(tables, oldId, newId)));
+  syncQueue.remapEntityId("tables", oldId, newId);
+}
+
+export function replaceTablesFromServer(tables: Table[]): void {
+  store.replace(sortTables(tables));
+}
+
+export async function hydrateTablesIfEmpty(): Promise<void> {
+  if (!isOnline()) {
+    return;
+  }
+
+  const stored = getItem<Table[]>(STORAGE_KEY);
+  if (stored !== null && stored.length > 0) {
+    return;
+  }
+
+  try {
+    const tables = await apiFetch<TableWithDetails[]>("/tables");
+    replaceTablesFromServer(tables);
+  } catch {
+    // Cache stays empty; offline reads still work once populated.
+  }
+}
 
 export const subscribeTables = store.subscribe;
 export const getTablesSnapshot = (): Table[] => store.getSnapshot();
@@ -25,7 +111,15 @@ export const getTablesServerSnapshot = store.getServerSnapshot;
 export const isTablesLoaded = store.isLoaded;
 
 export async function refreshTables(): Promise<TableWithDetails[]> {
-  return store.refresh();
+  if (!isOnline()) {
+    return getTablesSnapshot().map((table) =>
+      enrichTable(table, getProductsForEnrichment()),
+    );
+  }
+
+  const tables = await apiFetch<TableWithDetails[]>("/tables");
+  replaceTablesFromServer(tables);
+  return tables;
 }
 
 export function loadTables(): Table[] {
@@ -33,7 +127,7 @@ export function loadTables(): Table[] {
 }
 
 export function persistTables(_tables: Table[]): void {
-  store.scheduleRefresh();
+  // Local state is updated via mutate; no-op for compatibility.
 }
 
 export function calculateTableTotal(
@@ -50,71 +144,112 @@ export function countTableItems(items: TableOrderItem[]): number {
   return items.reduce((count, item) => count + item.quantity, 0);
 }
 
-export async function addTableItemApi(tableId: number, productId: string): Promise<TableWithDetails> {
-  const table = await apiFetch<TableWithDetails>(`/tables/${tableId}/items`, {
-    method: "POST",
-    body: JSON.stringify({ productId }),
+export async function addTableItemApi(
+  tableId: number,
+  productId: string,
+): Promise<TableWithDetails> {
+  store.mutate((tables) => sortTables(applyAddItem(tables, tableId, productId)));
+  enqueueAndFlush({
+    entity: "tables",
+    operation: "addItem",
+    entityId: tableId,
+    payload: { productId },
   });
-  await store.refresh();
-  return table;
+  return getEnrichedTable(tableId);
 }
 
 export async function removeTableItemApi(
   tableId: number,
   productId: string,
 ): Promise<TableWithDetails> {
-  const table = await apiFetch<TableWithDetails>(`/tables/${tableId}/items/${productId}`, {
-    method: "PATCH",
+  store.mutate((tables) => sortTables(applyRemoveItem(tables, tableId, productId)));
+  enqueueAndFlush({
+    entity: "tables",
+    operation: "removeItem",
+    entityId: tableId,
+    payload: { productId },
   });
-  await store.refresh();
-  return table;
+  return getEnrichedTable(tableId);
 }
 
 export async function clearTableApi(tableId: number): Promise<TableWithDetails> {
-  const table = await apiFetch<TableWithDetails>(`/tables/${tableId}/items`, {
-    method: "DELETE",
+  store.mutate((tables) => sortTables(applyClearTable(tables, tableId)));
+  enqueueAndFlush({
+    entity: "tables",
+    operation: "clearTable",
+    entityId: tableId,
+    payload: {},
   });
-  await store.refresh();
-  return table;
+  return getEnrichedTable(tableId);
 }
 
 export async function receivePaymentApi(
   tableId: number,
   payment: { method: string; amountReceived: number; change: number },
 ): Promise<{ ok: boolean }> {
-  const result = await apiFetch<{ ok: boolean }>(`/tables/${tableId}/payment`, {
-    method: "POST",
-    body: JSON.stringify(payment),
+  store.mutate((tables) => sortTables(applyPayment(tables, tableId)));
+  enqueueAndFlush({
+    entity: "tables",
+    operation: "payment",
+    entityId: tableId,
+    payload: payment,
   });
-  await store.refresh();
-  return result;
+  return { ok: true };
 }
 
 export async function createTableApi(body: {
   number: number;
   category: string;
 }): Promise<TableWithDetails> {
-  const table = await apiFetch<TableWithDetails>("/tables", {
-    method: "POST",
-    body: JSON.stringify(body),
+  const tempId = generateTempTableId();
+  store.mutate((tables) =>
+    sortTables(
+      applyCreateTable(tables, {
+        number: body.number,
+        category: body.category as Table["category"],
+      }, tempId),
+    ),
+  );
+  enqueueAndFlush({
+    entity: "tables",
+    operation: "createTable",
+    entityId: tempId,
+    payload: body,
   });
-  await store.refresh();
-  return table;
+  return getEnrichedTable(tempId);
 }
 
 export async function updateTableApi(
   id: number,
   body: { number?: number; category?: string },
 ): Promise<TableWithDetails> {
-  const table = await apiFetch<TableWithDetails>(`/tables/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(body),
+  store.mutate((tables) =>
+    sortTables(
+      applyUpdateTable(tables, id, {
+        number: body.number,
+        category: body.category as Table["category"] | undefined,
+      }),
+    ),
+  );
+  enqueueAndFlush({
+    entity: "tables",
+    operation: "updateTable",
+    entityId: id,
+    payload: body,
   });
-  await store.refresh();
-  return table;
+  return getEnrichedTable(id);
 }
 
 export async function deleteTableApi(id: number): Promise<void> {
-  await apiFetch<void>(`/tables/${id}`, { method: "DELETE" });
-  await store.refresh();
+  store.mutate((tables) => sortTables(applyDeleteTable(tables, id)));
+  if (isTempTableId(id)) {
+    syncQueue.removeMutationsForEntityId("tables", id);
+    return;
+  }
+  enqueueAndFlush({
+    entity: "tables",
+    operation: "deleteTable",
+    entityId: id,
+    payload: {},
+  });
 }

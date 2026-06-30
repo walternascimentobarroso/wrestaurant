@@ -98,6 +98,35 @@ export function resetRetries(id: string): void {
   writeQueue(queue);
 }
 
+export function remapEntityId(
+  entity: SyncEntity,
+  oldId: string | number,
+  newId: string | number,
+): void {
+  const queue = readQueue().map((mutation) => {
+    if (mutation.entity !== entity || mutation.entityId !== oldId) {
+      return mutation;
+    }
+
+    return {
+      ...mutation,
+      entityId: newId,
+    };
+  });
+
+  writeQueue(queue);
+}
+
+export function removeMutationsForEntityId(
+  entity: SyncEntity,
+  entityId: string | number,
+): void {
+  const queue = readQueue().filter(
+    (mutation) => !(mutation.entity === entity && mutation.entityId === entityId),
+  );
+  writeQueue(queue);
+}
+
 export function resetAllFailedRetries(): void {
   const queue = readQueue().map((mutation) => {
     if (!isPermanentError(mutation)) {
@@ -137,6 +166,8 @@ export const syncQueue = {
   getPendingCount,
   markRetry,
   resetRetries,
+  remapEntityId,
+  removeMutationsForEntityId,
   resetAllFailedRetries,
   subscribe,
   getSnapshot,

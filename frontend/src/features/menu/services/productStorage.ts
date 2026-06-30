@@ -1,12 +1,32 @@
 import type { Product } from "@/features/tables/types";
 import { apiFetch } from "@/lib/api";
-import { createApiStore } from "@/lib/apiStore";
+import { createOfflineStore, getItem, isOnline } from "@/lib/offline";
 
-const store = createApiStore<Product[]>({
-  fetchSnapshot: () => apiFetch<Product[]>("/products"),
+const STORAGE_KEY = "products";
+
+const store = createOfflineStore<Product[]>({
+  key: STORAGE_KEY,
   serverSnapshot: [],
   eventName: "restaurant-products-change",
 });
+
+export async function hydrateProductsIfEmpty(): Promise<void> {
+  if (!isOnline()) {
+    return;
+  }
+
+  const stored = getItem<Product[]>(STORAGE_KEY);
+  if (stored !== null && stored.length > 0) {
+    return;
+  }
+
+  try {
+    const products = await apiFetch<Product[]>("/products");
+    store.replace(products);
+  } catch {
+    // Keep empty cache until next successful hydrate.
+  }
+}
 
 export const subscribeProducts = store.subscribe;
 export const getProductsSnapshot = store.getSnapshot;
@@ -14,11 +34,17 @@ export const getProductsServerSnapshot = store.getServerSnapshot;
 export const isProductsLoaded = store.isLoaded;
 
 export async function refreshProducts(): Promise<Product[]> {
-  return store.refresh();
+  if (!isOnline()) {
+    return store.getSnapshot();
+  }
+
+  const products = await apiFetch<Product[]>("/products");
+  store.replace(products);
+  return products;
 }
 
 export function persistProducts(_products: Product[]): void {
-  store.scheduleRefresh();
+  // Local cache is updated via mutate on writes; no-op for compatibility.
 }
 
 export function countProductsByCategory(products: Product[], categoryName: string): number {
@@ -74,7 +100,7 @@ export async function createProductApi(body: Record<string, unknown>): Promise<P
     method: "POST",
     body: JSON.stringify(body),
   });
-  await store.refresh();
+  store.mutate((products) => [...products, product]);
   return product;
 }
 
@@ -86,11 +112,13 @@ export async function updateProductApi(
     method: "PATCH",
     body: JSON.stringify(body),
   });
-  await store.refresh();
+  store.mutate((products) =>
+    products.map((entry) => (entry.id === id ? product : entry)),
+  );
   return product;
 }
 
 export async function deleteProductApi(id: string): Promise<void> {
   await apiFetch<void>(`/products/${id}`, { method: "DELETE" });
-  await store.refresh();
+  store.mutate((products) => products.filter((entry) => entry.id !== id));
 }

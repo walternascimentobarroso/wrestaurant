@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -21,8 +22,15 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { brand } from "@/design-system";
 import { cn } from "@/lib/utils";
 
-import { AdminPasswordDialog } from "./AdminPasswordDialog";
 import { useAdminAuth } from "../hooks/useAdminAuth";
+
+const AdminPasswordDialog = dynamic(
+  () =>
+    import("./AdminPasswordDialog").then((module) => ({
+      default: module.AdminPasswordDialog,
+    })),
+  { ssr: false },
+);
 
 const ADMIN_NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -59,7 +67,7 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
         </div>
 
         <div className="w-full max-w-sm space-y-4 text-center">
-          <p className="font-heading text-xs font-semibold uppercase tracking-wide text-primary">
+          <p className="font-heading text-xs font-semibold uppercase tracking-wide text-foreground">
             {brand}
           </p>
           <h1 className="font-heading text-2xl font-bold text-foreground">
@@ -90,7 +98,7 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
         <div className="border-b border-border px-4 py-4">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="font-heading text-xs font-semibold uppercase tracking-wide text-primary">
+              <p className="font-heading text-xs font-semibold uppercase tracking-wide text-foreground">
                 {brand}
               </p>
               <h1 className="font-heading text-lg font-bold text-foreground">Administração</h1>
@@ -113,7 +121,7 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
                 className={cn(
                   "flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-primary/15 font-semibold text-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >

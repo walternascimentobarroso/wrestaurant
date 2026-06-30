@@ -1,18 +1,10 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 import { useTableAdmin } from "@/features/tables/hooks/useTableAdmin";
@@ -22,6 +14,14 @@ import {
   type TableCategory,
   type TableWithDetails,
 } from "@/features/tables/types";
+
+const AdminTableDialogs = dynamic(
+  () =>
+    import("./AdminTableDialogs").then((module) => ({
+      default: module.AdminTableDialogs,
+    })),
+  { ssr: false },
+);
 
 const CATEGORY_OPTIONS: { value: TableCategory; label: string }[] = [
   { value: "counter", label: TABLE_SECTION_LABELS.counter },
@@ -75,7 +75,7 @@ export function AdminTablesPage() {
     setFormOpen(true);
   }
 
-  function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const number = Number.parseInt(form.number, 10);
@@ -97,7 +97,7 @@ export function AdminTablesPage() {
     }
 
     if (editingTable) {
-      const result = updateTable(editingTable.id, {
+      const result = await updateTable(editingTable.id, {
         number,
         category: form.category,
       });
@@ -107,7 +107,12 @@ export function AdminTablesPage() {
         return;
       }
     } else {
-      createTable({ number, category: form.category });
+      try {
+        await createTable({ number, category: form.category });
+      } catch {
+        setFormError("Não foi possível cadastrar a mesa.");
+        return;
+      }
     }
 
     setFormOpen(false);
@@ -116,12 +121,12 @@ export function AdminTablesPage() {
     setFormError("");
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteTarget) {
       return;
     }
 
-    const result = deleteTable(deleteTarget.id);
+    const result = await deleteTable(deleteTarget.id);
     if (!result.ok) {
       setDeleteError(result.error ?? "Não foi possível excluir a mesa.");
       return;
@@ -129,6 +134,13 @@ export function AdminTablesPage() {
 
     setDeleteTarget(null);
     setDeleteError("");
+  }
+
+  function handleDeleteTargetChange(table: TableWithDetails | null) {
+    setDeleteTarget(table);
+    if (!table) {
+      setDeleteError("");
+    }
   }
 
   return (
@@ -188,7 +200,7 @@ export function AdminTablesPage() {
                               className={cn(
                                 "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
                                 table.status === "occupied"
-                                  ? "bg-primary/15 text-primary"
+                                  ? "bg-primary text-primary-foreground"
                                   : "bg-muted text-muted-foreground",
                               )}
                             >
@@ -234,119 +246,22 @@ export function AdminTablesPage() {
         })}
       </div>
 
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-md rounded-3xl p-6 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl">
-              {editingTable ? "Editar mesa" : "Nova mesa"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingTable
-                ? "Altere o número ou a seção da mesa."
-                : "Informe os dados da nova mesa."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleFormSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="table-category" className="text-sm font-medium">
-                Seção
-              </label>
-              <select
-                id="table-category"
-                value={form.category}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    category: event.target.value as TableCategory,
-                  }))
-                }
-                className="h-11 w-full rounded-xl border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                {CATEGORY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="table-number" className="text-sm font-medium">
-                Número
-              </label>
-              <Input
-                id="table-number"
-                type="number"
-                min={1}
-                value={form.number}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, number: event.target.value }))
-                }
-                className="h-11 rounded-xl px-3"
-              />
-            </div>
-
-            {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
-
-            <DialogFooter className="border-0 bg-transparent p-0 sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-xl"
-                onClick={() => setFormOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" className="rounded-xl">
-                {editingTable ? "Salvar" : "Cadastrar"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteTarget(null);
-            setDeleteError("");
-          }
-        }}
-      >
-        <DialogContent className="max-w-md rounded-3xl p-6 sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl">Excluir mesa</DialogTitle>
-            <DialogDescription>
-              {deleteTarget
-                ? `Deseja excluir ${getTableDisplayName(deleteTarget)}? Esta ação não pode ser desfeita.`
-                : null}
-            </DialogDescription>
-          </DialogHeader>
-
-          {deleteError ? <p className="text-sm text-destructive">{deleteError}</p> : null}
-
-          <DialogFooter className="border-0 bg-transparent p-0 sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => setDeleteTarget(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              className="rounded-xl"
-              onClick={handleDeleteConfirm}
-            >
-              Excluir
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {formOpen || deleteTarget ? (
+        <AdminTableDialogs
+          formOpen={formOpen}
+          onFormOpenChange={setFormOpen}
+          editingTable={editingTable}
+          form={form}
+          onFormChange={setForm}
+          formError={formError}
+          onFormSubmit={handleFormSubmit}
+          deleteTarget={deleteTarget}
+          onDeleteTargetChange={handleDeleteTargetChange}
+          deleteError={deleteError}
+          onDeleteConfirm={handleDeleteConfirm}
+          getTableDisplayName={getTableDisplayName}
+        />
+      ) : null}
     </div>
   );
 }

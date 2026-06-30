@@ -35,9 +35,6 @@ export function createApiStore<T>(options: {
     for (const listener of listeners) {
       listener();
     }
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event(options.eventName));
-    }
   }
 
   function applyData(data: T) {
@@ -52,15 +49,27 @@ export function createApiStore<T>(options: {
       return options.serverSnapshot;
     }
 
-    try {
-      const data = await options.fetchSnapshot();
-      applyData(data);
-      return data;
-    } catch (err) {
-      error = err;
-      emit();
-      throw err;
+    if (loading) {
+      await loading;
+      return cache;
     }
+
+    loading = options
+      .fetchSnapshot()
+      .then((data) => {
+        applyData(data);
+        return data;
+      })
+      .catch((err) => {
+        error = err;
+        emit();
+        throw err;
+      })
+      .finally(() => {
+        loading = null;
+      });
+
+    return loading;
   }
 
   function ensureLoaded() {
@@ -84,15 +93,8 @@ export function createApiStore<T>(options: {
   function subscribe(listener: Listener): () => void {
     listeners.add(listener);
     ensureLoaded();
-
-    const storageHandler = () => {
-      void refresh().catch(() => undefined);
-    };
-
-    window.addEventListener(options.eventName, storageHandler);
     return () => {
       listeners.delete(listener);
-      window.removeEventListener(options.eventName, storageHandler);
     };
   }
 

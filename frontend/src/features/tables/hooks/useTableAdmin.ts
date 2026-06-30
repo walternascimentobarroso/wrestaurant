@@ -7,6 +7,7 @@ import {
   getProductsSnapshot,
   subscribeProducts,
 } from "@/features/menu/services/productStorage";
+import { ApiError } from "@/lib/api";
 
 import {
   calculateTableTotal,
@@ -86,7 +87,7 @@ export function useTableAdmin() {
       } catch (error) {
         return {
           ok: false,
-          error: error instanceof Error ? error.message : "Não foi possível atualizar a mesa.",
+          error: error instanceof ApiError ? error.message : "Não foi possível atualizar a mesa.",
         };
       }
     },
@@ -110,7 +111,7 @@ export function useTableAdmin() {
       } catch (error) {
         return {
           ok: false,
-          error: error instanceof Error ? error.message : "Não foi possível excluir a mesa.",
+          error: error instanceof ApiError ? error.message : "Não foi possível excluir a mesa.",
         };
       }
     },

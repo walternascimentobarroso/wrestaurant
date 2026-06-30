@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { SettingsProvider } from "@/features/settings/components/SettingsProvider";
 import { brand } from "@/design-system";
 import { fraunces, manrope } from "@/lib/fonts";
 
@@ -32,7 +33,7 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          {children}
+          <SettingsProvider>{children}</SettingsProvider>
         </ThemeProvider>
       </body>
     </html>

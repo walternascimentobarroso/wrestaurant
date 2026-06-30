@@ -12,15 +12,23 @@ Monorepo fullstack para gestão do **Amora Café**: mesas, pedidos, estoque, fin
 
 ## Deploy em produção
 
-A aplicação em produção está dividida em três serviços na nuvem:
+A aplicação em produção está dividida em **três serviços** — o frontend **não** vai para o Render:
+
+| Serviço | Onde roda | URL |
+|---------|-----------|-----|
+| **Frontend** | Vercel | https://wrestaurant.amoracafe.pt/ |
+| **Backend (API)** | Render | https://wrestaurant.onrender.com/ |
+| **Banco** | Render PostgreSQL | interno (só o backend acessa) |
 
 ```mermaid
 flowchart LR
   User[Usuário] --> DNS[wrestaurant.amoracafe.pt]
   DNS --> Vercel[Vercel — Frontend]
-  Vercel -->|proxy /api/*| Render[Render — Backend]
-  Render --> DB[(Render — PostgreSQL)]
+  Vercel -->|proxy /api/*| API[wrestaurant.onrender.com]
+  API --> DB[(Render — PostgreSQL)]
 ```
+
+> **Importante:** `https://wrestaurant.onrender.com/` é só a **API** (FastAPI). A interface do app continua na Vercel. Na Vercel você só **aponta** o frontend para essa URL — não faz deploy do Next.js no Render.
 
 ### Frontend — Vercel
 
@@ -37,13 +45,13 @@ O frontend faz proxy das chamadas `/api/*` para o backend via rewrites do Next.j
 
 **Variáveis de ambiente na Vercel** (Settings → Environment Variables):
 
-| Variável | Descrição |
-|----------|-----------|
-| `BACKEND_URL` | URL pública do backend no Render (ex.: `https://…onrender.com`) |
-| `NEXT_PUBLIC_API_URL` | Mesma URL do backend (usada no build e no SSR) |
-| `NEXT_PUBLIC_ADMIN_PASSWORD` | Senha do painel admin (deve coincidir com `ADMIN_PASSWORD` do backend) |
+| Variável | Valor em produção |
+|----------|-------------------|
+| `BACKEND_URL` | `https://wrestaurant.onrender.com` |
+| `NEXT_PUBLIC_API_URL` | `https://wrestaurant.onrender.com` |
+| `NEXT_PUBLIC_ADMIN_PASSWORD` | mesma senha do `ADMIN_PASSWORD` no Render |
 
-Após alterar variáveis `NEXT_PUBLIC_*`, é necessário **redeploy** na Vercel para rebuildar.
+Após alterar variáveis `NEXT_PUBLIC_*`, faça **Redeploy** na Vercel (Deployments → ⋮ → Redeploy).
 
 ---
 
@@ -52,13 +60,13 @@ Após alterar variáveis `NEXT_PUBLIC_*`, é necessário **redeploy** na Vercel 
 | Item | Valor |
 |------|-------|
 | **Provedor** | [Render](https://render.com) — Web Service |
+| **URL pública** | https://wrestaurant.onrender.com/ |
+| **Health check** | https://wrestaurant.onrender.com/api/health |
+| **Swagger** | https://wrestaurant.onrender.com/docs |
 | **Dashboard** | https://dashboard.render.com/web/srv-d91vin9o3t8c73eot8rg |
 | **Root on deploy** | `backend/` |
 | **Runtime** | Docker (`backend/Dockerfile`) |
-| **Health check** | `GET /api/health` |
 | **Start command** | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
-
-A URL pública da API aparece no painel Render em **Settings → URL** (formato `https://<nome-do-servico>.onrender.com`).
 
 **Variáveis de ambiente no Render:**
 
@@ -130,6 +138,6 @@ Ver [`.env.example`](./.env.example). Resumo:
 | Variável | Local | Produção |
 |----------|-------|----------|
 | `DATABASE_URL` | `postgresql://…@db:5432/restaurant` | Internal URL do Render |
-| `CORS_ORIGINS` | `["http://localhost:3000"]` | `["https://wrestaurant.amoracafe.pt"]` |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | URL do backend no Render |
+| `CORS_ORIGINS` | `["http://localhost:3000"]` | `https://wrestaurant.amoracafe.pt` |
+| `BACKEND_URL` / `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | `https://wrestaurant.onrender.com` |
 | `SECRET_KEY` / `ADMIN_PASSWORD` | valores de dev | valores fortes, só no painel cloud |

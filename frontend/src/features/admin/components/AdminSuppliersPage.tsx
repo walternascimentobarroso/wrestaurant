@@ -125,7 +125,7 @@ export function AdminSuppliersPage() {
     setHistorySupplier(null);
   }
 
-  function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const input = {
@@ -137,8 +137,8 @@ export function AdminSuppliersPage() {
     };
 
     const result = editingSupplier
-      ? updateSupplier(editingSupplier.id, input)
-      : createSupplier(input);
+      ? await updateSupplier(editingSupplier.id, input)
+      : await createSupplier(input);
 
     if (!result.ok) {
       setFormError(result.error ?? "Não foi possível salvar o fornecedor.");
@@ -150,12 +150,12 @@ export function AdminSuppliersPage() {
     setFormError("");
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteTarget) {
       return;
     }
 
-    const result = deleteSupplier(deleteTarget.id);
+    const result = await deleteSupplier(deleteTarget.id);
     if (!result.ok) {
       setDeleteError(result.error ?? "Não foi possível excluir o fornecedor.");
       return;

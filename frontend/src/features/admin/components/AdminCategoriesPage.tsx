@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 import { useMenuCatalog } from "@/features/menu/hooks/useMenuCatalog";
-import type { MenuCategory } from "@/features/menu/types";
+import type { MenuCatalogActionResult, MenuCategory } from "@/features/menu/types";
 
 type FormMode =
   | { type: "category-create" }
@@ -80,26 +80,26 @@ export function AdminCategoriesPage() {
     setFormError("");
   }
 
-  function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!formMode) {
       return;
     }
 
-    let result: { ok: boolean; error?: string };
+    let result: MenuCatalogActionResult;
 
     switch (formMode.type) {
       case "category-create":
-        result = addCategory(formName);
+        result = await addCategory(formName);
         break;
       case "category-edit":
-        result = updateCategory(formMode.category.id, formName);
+        result = await updateCategory(formMode.category.id, formName);
         break;
       case "subcategory-create":
-        result = addSubcategory(formMode.category.id, formName);
+        result = await addSubcategory(formMode.category.id, formName);
         break;
       case "subcategory-edit":
-        result = updateSubcategory(formMode.category.id, formMode.subcategoryId, formName);
+        result = await updateSubcategory(formMode.category.id, formMode.subcategoryId, formName);
         break;
       default:
         return;
@@ -115,15 +115,15 @@ export function AdminCategoriesPage() {
     setFormError("");
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteTarget) {
       return;
     }
 
     const result =
       deleteTarget.type === "category"
-        ? deleteCategory(deleteTarget.categoryId)
-        : deleteSubcategory(deleteTarget.categoryId, deleteTarget.subcategoryId ?? "");
+        ? await deleteCategory(deleteTarget.categoryId)
+        : await deleteSubcategory(deleteTarget.categoryId, deleteTarget.subcategoryId ?? "");
 
     if (!result.ok) {
       setDeleteError(result.error ?? "Não foi possível excluir.");

@@ -91,11 +91,10 @@ function findPayable(id: string): Payable | undefined {
   return store.getSnapshot().find((payable) => payable.id === id);
 }
 
-export async function createPayableApi(body: Record<string, unknown>): Promise<Payable> {
-  const input = body as PayableFormInput;
+export async function createPayableApi(body: PayableFormInput): Promise<Payable> {
   const tempId = generateTempId();
   const createdAt = new Date().toISOString();
-  store.mutate((payables) => applyCreatePayable(payables, input, tempId, createdAt));
+  store.mutate((payables) => applyCreatePayable(payables, body, tempId, createdAt));
   enqueueAndFlush({
     entity: "payables",
     operation: "create",
@@ -112,10 +111,9 @@ export async function createPayableApi(body: Record<string, unknown>): Promise<P
 
 export async function updatePayableApi(
   id: string,
-  body: Record<string, unknown>,
+  body: PayableFormInput,
 ): Promise<Payable> {
-  const input = body as PayableFormInput;
-  store.mutate((payables) => applyUpdatePayable(payables, id, input));
+  store.mutate((payables) => applyUpdatePayable(payables, id, body));
 
   if (isTempId(id)) {
     const pendingCreate = syncQueue.findPendingMutation("payables", id, "create");

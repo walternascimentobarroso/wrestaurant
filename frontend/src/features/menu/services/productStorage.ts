@@ -190,10 +190,9 @@ function findProduct(productId: string): Product | undefined {
   return store.getSnapshot().find((product) => product.id === productId);
 }
 
-export async function createProductApi(body: Record<string, unknown>): Promise<Product> {
-  const input = body as ProductCreateInput;
+export async function createProductApi(body: ProductCreateInput): Promise<Product> {
   const tempId = generateTempId();
-  store.mutate((products) => applyCreateProduct(products, input, tempId));
+  store.mutate((products) => applyCreateProduct(products, body, tempId));
   enqueueAndFlush({
     entity: "products",
     operation: "create",
@@ -209,10 +208,9 @@ export async function createProductApi(body: Record<string, unknown>): Promise<P
 
 export async function updateProductApi(
   id: string,
-  body: Record<string, unknown>,
+  body: ProductUpdateInput,
 ): Promise<Product> {
-  const input = body as ProductUpdateInput;
-  store.mutate((products) => applyUpdateProduct(products, id, input));
+  store.mutate((products) => applyUpdateProduct(products, id, body));
 
   if (isTempId(id)) {
     const pendingCreate = syncQueue.findPendingMutation("products", id, "create");

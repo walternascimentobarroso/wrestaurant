@@ -98,10 +98,9 @@ function findPurchaseRecord(id: string): PurchaseRecord | undefined {
   return store.getSnapshot().find((record) => record.id === id);
 }
 
-export async function recordPurchaseApi(body: Record<string, unknown>): Promise<PurchaseRecord> {
-  const input = body as PurchaseInput;
-  const product = getProductsSnapshot().find((entry) => entry.id === input.productId);
-  const supplier = getSuppliersSnapshot().find((entry) => entry.id === input.supplierId);
+export async function recordPurchaseApi(body: PurchaseInput): Promise<PurchaseRecord> {
+  const product = getProductsSnapshot().find((entry) => entry.id === body.productId);
+  const supplier = getSuppliersSnapshot().find((entry) => entry.id === body.supplierId);
 
   if (!product) {
     throw new Error("Produto não encontrado.");
@@ -112,13 +111,13 @@ export async function recordPurchaseApi(body: Record<string, unknown>): Promise<
   }
 
   const tempId = generateTempId();
-  const record = buildPurchaseRecord(input, tempId, product, supplier);
+  const record = buildPurchaseRecord(body, tempId, product, supplier);
   store.mutate((records) => appendPurchase(records, record));
   applyPurchaseToProductCache(
-    input.productId,
-    input.quantity,
-    input.unitCost,
-    input.supplierId,
+    body.productId,
+    body.quantity,
+    body.unitCost,
+    body.supplierId,
   );
   enqueueAndFlush({
     entity: "purchases",

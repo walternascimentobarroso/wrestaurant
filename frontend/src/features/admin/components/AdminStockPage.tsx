@@ -125,7 +125,7 @@ export function AdminStockPage() {
     }
   }
 
-  function handleAdjustSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleAdjustSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!adjustTarget) {
       return;
@@ -149,7 +149,7 @@ export function AdminStockPage() {
         return;
       }
 
-      const result = recordProductPurchase({
+      const result = await recordProductPurchase({
         productId: adjustTarget.id,
         supplierId,
         unitCost: cost,
@@ -163,7 +163,7 @@ export function AdminStockPage() {
         return;
       }
     } else {
-      const result = adjustStock(adjustTarget.id, -quantity, "adjustment", adjustReason);
+      const result = await adjustStock(adjustTarget.id, -quantity, "adjustment", adjustReason);
       if (!result.ok) {
         setAdjustError(result.error ?? "Não foi possível ajustar o estoque.");
         return;

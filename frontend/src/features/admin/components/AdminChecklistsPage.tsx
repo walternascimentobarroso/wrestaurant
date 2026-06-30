@@ -120,7 +120,7 @@ export function AdminChecklistsPage() {
     setFormError("");
   }
 
-  function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!formMode) {
       return;
@@ -129,12 +129,12 @@ export function AdminChecklistsPage() {
     const daysOfWeek = selectionToDaysFilter(formDays);
     const result =
       formMode.type === "create"
-        ? addItem({
+        ? await addItem({
             templateId: formMode.templateId,
             label: formLabel,
             daysOfWeek,
           })
-        : editItem(formMode.item.id, {
+        : await editItem(formMode.item.id, {
             label: formLabel,
             daysOfWeek,
             active: formActive,
@@ -150,12 +150,12 @@ export function AdminChecklistsPage() {
     setFormError("");
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteTarget) {
       return;
     }
 
-    const result = removeItem(deleteTarget.id);
+    const result = await removeItem(deleteTarget.id);
     if (!result.ok) {
       setDeleteError(result.error ?? "Não foi possível excluir.");
       return;
@@ -165,12 +165,12 @@ export function AdminChecklistsPage() {
     setDeleteError("");
   }
 
-  function handleTemplateSave() {
+  async function handleTemplateSave() {
     if (!activeTemplate || !activeTemplateDraft) {
       return;
     }
 
-    const result = editTemplate(activeTemplate.id, {
+    const result = await editTemplate(activeTemplate.id, {
       timeWindowStart: activeTemplateDraft.start,
       timeWindowEnd: activeTemplateDraft.end,
       active: activeTemplate.active,

@@ -89,11 +89,10 @@ function findSupplier(id: string): Supplier | undefined {
   return store.getSnapshot().find((supplier) => supplier.id === id);
 }
 
-export async function createSupplierApi(body: Record<string, unknown>): Promise<Supplier> {
-  const input = body as SupplierInput;
+export async function createSupplierApi(body: SupplierInput): Promise<Supplier> {
   const tempId = generateTempId();
   const createdAt = new Date().toISOString();
-  store.mutate((suppliers) => applyCreateSupplier(suppliers, input, tempId, createdAt));
+  store.mutate((suppliers) => applyCreateSupplier(suppliers, body, tempId, createdAt));
   enqueueAndFlush({
     entity: "suppliers",
     operation: "create",
@@ -110,10 +109,9 @@ export async function createSupplierApi(body: Record<string, unknown>): Promise<
 
 export async function updateSupplierApi(
   id: string,
-  body: Record<string, unknown>,
+  body: SupplierInput,
 ): Promise<Supplier> {
-  const input = body as SupplierInput;
-  store.mutate((suppliers) => applyUpdateSupplier(suppliers, id, input));
+  store.mutate((suppliers) => applyUpdateSupplier(suppliers, id, body));
 
   if (isTempId(id)) {
     const pendingCreate = syncQueue.findPendingMutation("suppliers", id, "create");

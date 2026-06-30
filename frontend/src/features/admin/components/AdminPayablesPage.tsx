@@ -201,7 +201,7 @@ export function AdminPayablesPage() {
     setStatusError("");
   }
 
-  function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const amount = Number.parseFloat(form.amount.replace(",", "."));
@@ -231,8 +231,8 @@ export function AdminPayablesPage() {
       : baseInput;
 
     const result = editingPayable
-      ? updatePayable(editingPayable.id, input)
-      : createPayable(input);
+      ? await updatePayable(editingPayable.id, input)
+      : await createPayable(input);
 
     if (!result.ok) {
       setFormError(result.error ?? "Não foi possível salvar a conta.");
@@ -244,7 +244,7 @@ export function AdminPayablesPage() {
     setFormError("");
   }
 
-  function handlePaySubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handlePaySubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!payTarget) {
       return;
@@ -252,7 +252,7 @@ export function AdminPayablesPage() {
 
     const amount = Number.parseFloat(paidAmount.replace(",", "."));
     const paidAtIso = new Date(`${paidAt}T12:00:00`).toISOString();
-    const result = markAsPaid(payTarget.id, paidAtIso, amount);
+    const result = await markAsPaid(payTarget.id, paidAtIso, amount);
 
     if (!result.ok) {
       setPayError(result.error ?? "Não foi possível registrar o pagamento.");
@@ -263,7 +263,7 @@ export function AdminPayablesPage() {
     setPayError("");
   }
 
-  function handleStatusSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleStatusSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!statusTarget) {
       return;
@@ -276,7 +276,7 @@ export function AdminPayablesPage() {
         ? Number.parseFloat(statusPaidAmount.replace(",", "."))
         : undefined;
 
-    const result = changePayableStatus(statusTarget.id, statusValue, paidAtIso, paidAmount);
+    const result = await changePayableStatus(statusTarget.id, statusValue, paidAtIso, paidAmount);
 
     if (!result.ok) {
       setStatusError(result.error ?? "Não foi possível alterar o status.");
@@ -287,12 +287,12 @@ export function AdminPayablesPage() {
     setStatusError("");
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteTarget) {
       return;
     }
 
-    const result = deletePayable(deleteTarget.id);
+    const result = await deletePayable(deleteTarget.id);
     if (!result.ok) {
       setDeleteError(result.error ?? "Não foi possível excluir a conta.");
       return;

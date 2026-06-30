@@ -18,6 +18,7 @@ from app.models import (
     Supplier,
 )
 from app.models.enums import CurrencyCode, TableCategory, TableStatus
+from app.services.migrations import migrate_updated_at_columns
 
 TABLE_CATEGORY_CONFIG = [
     (TableCategory.COUNTER, 4),
@@ -212,3 +213,4 @@ def seed_database(db: Session) -> None:
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    migrate_updated_at_columns()

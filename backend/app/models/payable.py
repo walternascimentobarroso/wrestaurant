@@ -4,6 +4,7 @@ from sqlalchemy import Date, DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.mixins import TimestampMixin
 
 
 class PayableCategory(Base):
@@ -13,7 +14,7 @@ class PayableCategory(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
 
 
-class Payable(Base):
+class Payable(Base, TimestampMixin):
     __tablename__ = "payables"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

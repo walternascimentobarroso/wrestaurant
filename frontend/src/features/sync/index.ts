@@ -6,5 +6,8 @@ export {
   hydrateAll,
   hydrateFromServer,
   initSync,
+  pullSyncDelta,
   retryFailed,
+  retryMutationById,
+  discardMutationById,
 } from "./services/syncService";

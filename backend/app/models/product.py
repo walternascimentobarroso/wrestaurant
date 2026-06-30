@@ -3,9 +3,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.enums import ProductKind, StockUnit
+from app.models.mixins import TimestampMixin
 
 
-class Product(Base):
+class Product(Base, TimestampMixin):
     __tablename__ = "products"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

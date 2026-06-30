@@ -2,9 +2,10 @@ from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.mixins import TimestampMixin
 
 
-class MenuCategory(Base):
+class MenuCategory(Base, TimestampMixin):
     __tablename__ = "menu_categories"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -16,7 +17,7 @@ class MenuCategory(Base):
     )
 
 
-class MenuSubcategory(Base):
+class MenuSubcategory(Base, TimestampMixin):
     __tablename__ = "menu_subcategories"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

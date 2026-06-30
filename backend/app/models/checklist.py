@@ -4,9 +4,10 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.mixins import TimestampMixin
 
 
-class ChecklistTemplate(Base):
+class ChecklistTemplate(Base, TimestampMixin):
     __tablename__ = "checklist_templates"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -23,7 +24,7 @@ class ChecklistTemplate(Base):
     )
 
 
-class ChecklistItem(Base):
+class ChecklistItem(Base, TimestampMixin):
     __tablename__ = "checklist_items"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -43,7 +44,7 @@ class ChecklistItem(Base):
     )
 
 
-class ChecklistCompletion(Base):
+class ChecklistCompletion(Base, TimestampMixin):
     __tablename__ = "checklist_completions"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

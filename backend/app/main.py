@@ -16,6 +16,7 @@ from app.api.routes import (
     settings as settings_routes,
     stock,
     suppliers,
+    sync,
     tables,
 )
 from app.config import settings
@@ -54,4 +55,5 @@ app.include_router(purchases.router, prefix="/api")
 app.include_router(suppliers.router, prefix="/api")
 app.include_router(payables.router, prefix="/api")
 app.include_router(checklists.router, prefix="/api")
+app.include_router(sync.router, prefix="/api")
 

@@ -5,9 +5,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.enums import TableCategory, TableStatus
+from app.models.mixins import TimestampMixin
 
 
-class RestaurantTable(Base):
+class RestaurantTable(Base, TimestampMixin):
     __tablename__ = "restaurant_tables"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -22,7 +23,7 @@ class RestaurantTable(Base):
     )
 
 
-class TableOrderItem(Base):
+class TableOrderItem(Base, TimestampMixin):
     __tablename__ = "table_order_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

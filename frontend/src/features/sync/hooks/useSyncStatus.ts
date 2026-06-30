@@ -8,19 +8,21 @@ import {
   subscribeConnectivity,
   SYNC_MAX_RETRIES,
   syncQueue,
+  type SyncMutation,
 } from "@/lib/offline";
 
-import { retryFailed } from "../services/syncService";
+import {
+  discardMutationById,
+  retryFailed,
+  retryMutationById,
+} from "../services/syncService";
 
-function countPending(mutations: ReturnType<typeof syncQueue.getSnapshot>): number {
-  return mutations.filter((mutation) => mutation.retries < SYNC_MAX_RETRIES)
-    .length;
+function countPending(mutations: SyncMutation[]): number {
+  return mutations.filter((mutation) => mutation.retries < SYNC_MAX_RETRIES).length;
 }
 
-function hasPermanentErrors(
-  mutations: ReturnType<typeof syncQueue.getSnapshot>,
-): boolean {
-  return mutations.some((mutation) => mutation.retries >= SYNC_MAX_RETRIES);
+function getFailedMutations(mutations: SyncMutation[]): SyncMutation[] {
+  return mutations.filter((mutation) => mutation.retries >= SYNC_MAX_RETRIES);
 }
 
 export function useSyncStatus() {
@@ -36,14 +38,27 @@ export function useSyncStatus() {
     getConnectivityServerSnapshot,
   );
 
-  const retry = useCallback(() => {
+  const errors = getFailedMutations(mutations);
+
+  const retry = useCallback((mutationId: string) => {
+    retryMutationById(mutationId);
+  }, []);
+
+  const retryAll = useCallback(() => {
     retryFailed();
+  }, []);
+
+  const discard = useCallback((mutationId: string) => {
+    discardMutationById(mutationId);
   }, []);
 
   return {
     online,
     pendingCount: countPending(mutations),
-    hasErrors: hasPermanentErrors(mutations),
+    errorCount: errors.length,
+    errors,
     retry,
+    retryAll,
+    discard,
   };
 }

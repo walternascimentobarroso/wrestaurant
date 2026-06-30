@@ -4,9 +4,10 @@ from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.mixins import TimestampMixin
 
 
-class Sale(Base):
+class Sale(Base, TimestampMixin):
     __tablename__ = "sales"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

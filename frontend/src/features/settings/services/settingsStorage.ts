@@ -27,6 +27,10 @@ function enqueueAndFlush(
   void syncEngine.flush();
 }
 
+export function replaceSettingsFromServer(settings: AppSettings): void {
+  store.replace(settings);
+}
+
 export async function hydrateSettingsIfEmpty(): Promise<void> {
   if (!isOnline()) {
     return;

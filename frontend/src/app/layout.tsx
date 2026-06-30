@@ -11,6 +11,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: `${brand} — Mesas`,
   description: `Sistema de gestão de mesas do ${brand}`,
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: brand,
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

@@ -19,10 +19,12 @@ import { registerTableSyncHandlers } from "@/features/tables/services/tableSyncH
 import { hydrateTablesIfEmpty } from "@/features/tables/services/tableStorage";
 import { apiFetch } from "@/lib/api";
 import {
+  getItem,
   initIndexedDbPersistence,
   isOnline,
   processQueue,
   registerHandler,
+  setItem,
   SYNC_MAX_RETRIES,
   syncEngine,
   syncQueue,
@@ -31,8 +33,19 @@ import {
 } from "@/lib/offline";
 import type { AppSettings } from "@/features/settings/types";
 
+import {
+  applySyncDelta,
+  applySyncSnapshot,
+  DELTA_CURSOR_KEY,
+  type SyncDeltaPayload,
+  type SyncSnapshotPayload,
+} from "./syncHydration";
+
+const DELTA_POLL_MS = 60_000;
+
 let cleanup: (() => void) | null = null;
 let handlersRegistered = false;
+let deltaPollTimer: ReturnType<typeof setInterval> | null = null;
 
 async function handleSettingsMutation(mutation: SyncMutation): Promise<void> {
   if (mutation.operation !== "updateCurrency") {
@@ -64,8 +77,18 @@ function registerSyncHandlers(): void {
   handlersRegistered = true;
 }
 
-export async function hydrateAll(): Promise<void> {
-  await initIndexedDbPersistence();
+async function hydrateAllFromSnapshot(): Promise<boolean> {
+  try {
+    const snapshot = await apiFetch<SyncSnapshotPayload>("/sync/snapshot");
+    applySyncSnapshot(snapshot);
+    setItem(DELTA_CURSOR_KEY, snapshot.serverTime);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function hydrateAllFallback(): Promise<void> {
   await Promise.all([
     hydrateTablesIfEmpty(),
     hydrateProductsIfEmpty(),
@@ -78,6 +101,57 @@ export async function hydrateAll(): Promise<void> {
     hydrateStockMovementsIfEmpty(),
     hydrateChecklistsIfEmpty(),
   ]);
+}
+
+export async function hydrateAll(): Promise<void> {
+  await initIndexedDbPersistence();
+
+  if (isOnline()) {
+    const hydrated = await hydrateAllFromSnapshot();
+    if (hydrated) {
+      return;
+    }
+  }
+
+  await hydrateAllFallback();
+}
+
+export async function pullSyncDelta(): Promise<void> {
+  if (!isOnline()) {
+    return;
+  }
+
+  const cursor = getItem<string>(DELTA_CURSOR_KEY);
+  if (!cursor) {
+    return;
+  }
+
+  try {
+    const delta = await apiFetch<SyncDeltaPayload>(
+      `/sync/delta?since=${encodeURIComponent(cursor)}`,
+    );
+    applySyncDelta(delta);
+    setItem(DELTA_CURSOR_KEY, delta.serverTime);
+  } catch {
+    // Background pull failures are non-fatal.
+  }
+}
+
+function startDeltaPolling(): void {
+  if (deltaPollTimer !== null || typeof window === "undefined") {
+    return;
+  }
+
+  deltaPollTimer = setInterval(() => {
+    void pullSyncDelta();
+  }, DELTA_POLL_MS);
+}
+
+function stopDeltaPolling(): void {
+  if (deltaPollTimer !== null) {
+    clearInterval(deltaPollTimer);
+    deltaPollTimer = null;
+  }
 }
 
 export async function hydrateFromServer(
@@ -120,9 +194,20 @@ export function initSync(): () => void {
 
   registerSyncHandlers();
   cleanup = syncEngine.start();
-  void hydrateAll();
+  void hydrateAll().then(() => {
+    void pullSyncDelta();
+  });
+  startDeltaPolling();
 
-  return cleanup;
+  if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  }
+
+  return () => {
+    cleanup?.();
+    cleanup = null;
+    stopDeltaPolling();
+  };
 }
 
 export function getSyncStatus(): {
@@ -148,4 +233,13 @@ export function getSyncStatus(): {
 export function retryFailed(): void {
   syncQueue.resetAllFailedRetries();
   void processQueue();
+}
+
+export function retryMutationById(mutationId: string): void {
+  syncQueue.resetRetries(mutationId);
+  void processQueue();
+}
+
+export function discardMutationById(mutationId: string): void {
+  syncQueue.dequeue(mutationId);
 }

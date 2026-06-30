@@ -27,7 +27,7 @@ interface ReceivePaymentDialogProps {
     method: PaymentMethod;
     amountReceived: number;
     change: number;
-  }) => StockActionResult;
+  }) => StockActionResult | Promise<StockActionResult>;
 }
 
 function formatAmountForInput(value: number): string {
@@ -74,12 +74,12 @@ export function ReceivePaymentDialog({
     }
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (!method || isInsufficientCash) {
       return;
     }
 
-    const result = onConfirm({
+    const result = await onConfirm({
       method,
       amountReceived: received,
       change,

@@ -1,98 +1,29 @@
-import { createInitialTables } from "../data/initialTables";
 import type { Table, TableOrderItem } from "../types";
+import { apiFetch } from "@/lib/api";
+import { createApiStore } from "@/lib/apiStore";
 
-const STORAGE_KEY = "restaurant-tables";
-const STORAGE_EVENT = "restaurant-tables-change";
+type TableWithDetails = Table & { total: number; itemCount: number };
 
-const SERVER_SNAPSHOT = createInitialTables();
+const store = createApiStore<TableWithDetails[]>({
+  fetchSnapshot: () => apiFetch<TableWithDetails[]>("/tables"),
+  serverSnapshot: [],
+  eventName: "restaurant-tables-change",
+});
 
-let cachedClientRaw: string | null | undefined;
-let cachedClientSnapshot: Table[] | null = null;
+export const subscribeTables = store.subscribe;
+export const getTablesSnapshot = (): Table[] => store.getSnapshot();
+export const getTablesServerSnapshot = store.getServerSnapshot;
 
-function migrateTablesWithoutCategory(stored: Table[]): Table[] {
-  return SERVER_SNAPSHOT.map((initialTable) => {
-    const existing = stored.find((table) => table.id === initialTable.id);
-    if (!existing) {
-      return initialTable;
-    }
-
-    return {
-      ...initialTable,
-      status: existing.status,
-      items: existing.items,
-      openedAt: existing.openedAt,
-    };
-  });
-}
-
-function parseStoredTables(raw: string): Table[] {
-  const parsed = JSON.parse(raw) as Table[];
-  if (!Array.isArray(parsed) || parsed.length === 0) {
-    return SERVER_SNAPSHOT;
-  }
-
-  if (!parsed.some((table) => table.category)) {
-    return migrateTablesWithoutCategory(parsed);
-  }
-
-  return parsed;
-}
-
-function readTablesFromStorage(): Table[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === cachedClientRaw && cachedClientSnapshot !== null) {
-      return cachedClientSnapshot;
-    }
-
-    cachedClientRaw = raw;
-    cachedClientSnapshot = raw ? parseStoredTables(raw) : SERVER_SNAPSHOT;
-    return cachedClientSnapshot;
-  } catch {
-    cachedClientRaw = null;
-    cachedClientSnapshot = SERVER_SNAPSHOT;
-    return SERVER_SNAPSHOT;
-  }
-}
-
-export function subscribeTables(onStoreChange: () => void): () => void {
-  const handler = (event: Event) => {
-    if (event.type === "storage") {
-      cachedClientRaw = undefined;
-      cachedClientSnapshot = null;
-    }
-    onStoreChange();
-  };
-  window.addEventListener(STORAGE_EVENT, handler);
-  window.addEventListener("storage", handler);
-  return () => {
-    window.removeEventListener(STORAGE_EVENT, handler);
-    window.removeEventListener("storage", handler);
-  };
-}
-
-export function getTablesSnapshot(): Table[] {
-  return readTablesFromStorage();
-}
-
-export function getTablesServerSnapshot(): Table[] {
-  return SERVER_SNAPSHOT;
+export async function refreshTables(): Promise<TableWithDetails[]> {
+  return store.refresh();
 }
 
 export function loadTables(): Table[] {
-  if (typeof window === "undefined") {
-    return SERVER_SNAPSHOT;
-  }
-
-  return readTablesFromStorage();
+  return getTablesSnapshot();
 }
 
-export function persistTables(tables: Table[]): void {
-  const serialized = JSON.stringify(tables);
-  localStorage.setItem(STORAGE_KEY, serialized);
-  cachedClientRaw = serialized;
-  cachedClientSnapshot = tables;
-  window.dispatchEvent(new Event(STORAGE_EVENT));
+export function persistTables(_tables: Table[]): void {
+  void store.refresh();
 }
 
 export function calculateTableTotal(
@@ -107,4 +38,73 @@ export function calculateTableTotal(
 
 export function countTableItems(items: TableOrderItem[]): number {
   return items.reduce((count, item) => count + item.quantity, 0);
+}
+
+export async function addTableItemApi(tableId: number, productId: string): Promise<TableWithDetails> {
+  const table = await apiFetch<TableWithDetails>(`/tables/${tableId}/items`, {
+    method: "POST",
+    body: JSON.stringify({ productId }),
+  });
+  await store.refresh();
+  return table;
+}
+
+export async function removeTableItemApi(
+  tableId: number,
+  productId: string,
+): Promise<TableWithDetails> {
+  const table = await apiFetch<TableWithDetails>(`/tables/${tableId}/items/${productId}`, {
+    method: "PATCH",
+  });
+  await store.refresh();
+  return table;
+}
+
+export async function clearTableApi(tableId: number): Promise<TableWithDetails> {
+  const table = await apiFetch<TableWithDetails>(`/tables/${tableId}/items`, {
+    method: "DELETE",
+  });
+  await store.refresh();
+  return table;
+}
+
+export async function receivePaymentApi(
+  tableId: number,
+  payment: { method: string; amountReceived: number; change: number },
+): Promise<{ ok: boolean }> {
+  const result = await apiFetch<{ ok: boolean }>(`/tables/${tableId}/payment`, {
+    method: "POST",
+    body: JSON.stringify(payment),
+  });
+  await store.refresh();
+  return result;
+}
+
+export async function createTableApi(body: {
+  number: number;
+  category: string;
+}): Promise<TableWithDetails> {
+  const table = await apiFetch<TableWithDetails>("/tables", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  await store.refresh();
+  return table;
+}
+
+export async function updateTableApi(
+  id: number,
+  body: { number?: number; category?: string },
+): Promise<TableWithDetails> {
+  const table = await apiFetch<TableWithDetails>(`/tables/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  await store.refresh();
+  return table;
+}
+
+export async function deleteTableApi(id: number): Promise<void> {
+  await apiFetch<void>(`/tables/${id}`, { method: "DELETE" });
+  await store.refresh();
 }

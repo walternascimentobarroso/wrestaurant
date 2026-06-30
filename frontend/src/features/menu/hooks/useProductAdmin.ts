@@ -12,10 +12,12 @@ import { getTablesSnapshot } from "@/features/tables/services/tableStorage";
 import type { Product, ProductKind, RecipeLine, StockUnit } from "@/features/tables/types";
 
 import {
+  createProductApi,
+  deleteProductApi,
   getProductsServerSnapshot,
   getProductsSnapshot,
-  persistProducts,
   subscribeProducts,
+  updateProductApi,
 } from "../services/productStorage";
 import type { MenuCatalogActionResult } from "../types";
 
@@ -37,10 +39,6 @@ export interface ProductInput {
 
 function normalizeName(value: string): string {
   return value.trim();
-}
-
-function createProductId(): string {
-  return `p-${crypto.randomUUID()}`;
 }
 
 function isProductInActiveOrders(productId: string): boolean {
@@ -167,6 +165,28 @@ function buildProductFields(
   };
 }
 
+function buildApiPayload(input: ProductInput, products: Product[]) {
+  const fields = buildProductFields(input, products);
+  return {
+    name: normalizeName(input.name),
+    price: fields.price,
+    category: input.category,
+    subcategory: input.subcategory,
+    kind: fields.kind,
+    recipe: fields.recipe?.map((line) => ({
+      ingredientId: line.ingredientId,
+      quantity: line.quantity,
+      unit: line.unit,
+    })),
+    trackStock: fields.trackStock,
+    stockQuantity: fields.stockQuantity,
+    minStock: fields.minStock,
+    stockUnit: fields.stockUnit ?? "un",
+    packageSize: fields.packageSize,
+    packageUnit: fields.packageUnit,
+  };
+}
+
 export function useProductAdmin() {
   const products = useSyncExternalStore(
     subscribeProducts,
@@ -174,12 +194,8 @@ export function useProductAdmin() {
     getProductsServerSnapshot,
   );
 
-  const saveProducts = useCallback((nextProducts: Product[]) => {
-    persistProducts(nextProducts);
-  }, []);
-
   const createProduct = useCallback(
-    (input: ProductInput): MenuCatalogActionResult => {
+    async (input: ProductInput): Promise<MenuCatalogActionResult> => {
       const name = normalizeName(input.name);
       if (!name) {
         return { ok: false, error: "Informe o nome do produto." };
@@ -212,22 +228,21 @@ export function useProductAdmin() {
         }
       }
 
-      const newProduct: Product = {
-        id: createProductId(),
-        name,
-        category: input.category,
-        subcategory: input.subcategory,
-        ...buildProductFields(input, products),
-      };
-
-      saveProducts([newProduct, ...products]);
-      return { ok: true };
+      try {
+        await createProductApi(buildApiPayload(input, products));
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : "Não foi possível salvar o produto.",
+        };
+      }
     },
-    [products, saveProducts],
+    [products],
   );
 
   const updateProduct = useCallback(
-    (productId: string, input: ProductInput): MenuCatalogActionResult => {
+    async (productId: string, input: ProductInput): Promise<MenuCatalogActionResult> => {
       const product = products.find((entry) => entry.id === productId);
       if (!product) {
         return { ok: false, error: "Produto não encontrado." };
@@ -265,27 +280,21 @@ export function useProductAdmin() {
         }
       }
 
-      saveProducts(
-        products.map((entry) =>
-          entry.id === productId
-            ? {
-                ...entry,
-                name,
-                category: input.category,
-                subcategory: input.subcategory,
-                ...buildProductFields(input, products),
-              }
-            : entry,
-        ),
-      );
-
-      return { ok: true };
+      try {
+        await updateProductApi(productId, buildApiPayload(input, products));
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : "Não foi possível salvar o produto.",
+        };
+      }
     },
-    [products, saveProducts],
+    [products],
   );
 
   const deleteProduct = useCallback(
-    (productId: string): MenuCatalogActionResult => {
+    async (productId: string): Promise<MenuCatalogActionResult> => {
       const product = products.find((entry) => entry.id === productId);
       if (!product) {
         return { ok: false, error: "Produto não encontrado." };
@@ -305,10 +314,17 @@ export function useProductAdmin() {
         };
       }
 
-      saveProducts(products.filter((entry) => entry.id !== productId));
-      return { ok: true };
+      try {
+        await deleteProductApi(productId);
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : "Não foi possível excluir o produto.",
+        };
+      }
     },
-    [products, saveProducts],
+    [products],
   );
 
   return {

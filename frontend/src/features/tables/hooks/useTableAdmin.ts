@@ -11,10 +11,12 @@ import {
 import {
   calculateTableTotal,
   countTableItems,
+  createTableApi,
+  deleteTableApi,
   getTablesServerSnapshot,
   getTablesSnapshot,
-  persistTables,
   subscribeTables,
+  updateTableApi,
 } from "../services/tableStorage";
 import type { Product, Table, TableCategory, TableWithDetails } from "../types";
 
@@ -38,14 +40,6 @@ function enrichTable(table: Table, products: Product[]): TableWithDetails {
   };
 }
 
-function getNextTableId(tables: Table[]): number {
-  if (tables.length === 0) {
-    return 1;
-  }
-
-  return Math.max(...tables.map((table) => table.id)) + 1;
-}
-
 export function useTableAdmin() {
   const products = useSyncExternalStore(
     subscribeProducts,
@@ -59,10 +53,6 @@ export function useTableAdmin() {
     getTablesServerSnapshot,
   );
 
-  const saveTables = useCallback((nextTables: Table[]) => {
-    persistTables(nextTables);
-  }, []);
-
   const getNextNumber = useCallback(
     (category: TableCategory): number => {
       const categoryTables = tables.filter((table) => table.category === category);
@@ -75,23 +65,12 @@ export function useTableAdmin() {
     [tables],
   );
 
-  const createTable = useCallback(
-    ({ number, category }: CreateTableInput) => {
-      const newTable: Table = {
-        id: getNextTableId(tables),
-        number,
-        category,
-        status: "free",
-        items: [],
-      };
-
-      saveTables([...tables, newTable]);
-    },
-    [tables, saveTables],
-  );
+  const createTable = useCallback(async ({ number, category }: CreateTableInput) => {
+    await createTableApi({ number, category });
+  }, []);
 
   const updateTable = useCallback(
-    (tableId: number, input: UpdateTableInput): AdminActionResult => {
+    async (tableId: number, input: UpdateTableInput): Promise<AdminActionResult> => {
       const table = tables.find((entry) => entry.id === tableId);
       if (!table) {
         return { ok: false, error: "Mesa não encontrada." };
@@ -101,21 +80,21 @@ export function useTableAdmin() {
         return { ok: false, error: "Não é possível editar uma mesa ocupada." };
       }
 
-      saveTables(
-        tables.map((entry) =>
-          entry.id === tableId
-            ? { ...entry, number: input.number, category: input.category }
-            : entry,
-        ),
-      );
-
-      return { ok: true };
+      try {
+        await updateTableApi(tableId, input);
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : "Não foi possível atualizar a mesa.",
+        };
+      }
     },
-    [tables, saveTables],
+    [tables],
   );
 
   const deleteTable = useCallback(
-    (tableId: number): AdminActionResult => {
+    async (tableId: number): Promise<AdminActionResult> => {
       const table = tables.find((entry) => entry.id === tableId);
       if (!table) {
         return { ok: false, error: "Mesa não encontrada." };
@@ -125,10 +104,17 @@ export function useTableAdmin() {
         return { ok: false, error: "Não é possível excluir uma mesa ocupada." };
       }
 
-      saveTables(tables.filter((entry) => entry.id !== tableId));
-      return { ok: true };
+      try {
+        await deleteTableApi(tableId);
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : "Não foi possível excluir a mesa.",
+        };
+      }
     },
-    [tables, saveTables],
+    [tables],
   );
 
   return {

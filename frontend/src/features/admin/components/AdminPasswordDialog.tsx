@@ -18,7 +18,7 @@ interface AdminPasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  onLogin: (password: string) => boolean;
+  onLogin: (password: string) => boolean | Promise<boolean>;
 }
 
 export function AdminPasswordDialog({
@@ -30,7 +30,7 @@ export function AdminPasswordDialog({
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!password.trim()) {
@@ -38,7 +38,8 @@ export function AdminPasswordDialog({
       return;
     }
 
-    if (!onLogin(password)) {
+    const ok = await onLogin(password);
+    if (!ok) {
       setError("Senha incorreta.");
       return;
     }

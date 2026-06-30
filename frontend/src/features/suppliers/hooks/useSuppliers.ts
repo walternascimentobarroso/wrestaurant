@@ -3,21 +3,18 @@
 import { useCallback, useSyncExternalStore } from "react";
 
 import {
-  countPayablesBySupplier,
   isSupplierNameTaken,
   validateSupplierInput,
 } from "../services/supplierService";
 import {
+  createSupplierApi,
+  deleteSupplierApi,
   getSuppliersServerSnapshot,
   getSuppliersSnapshot,
-  persistSuppliers,
   subscribeSuppliers,
+  updateSupplierApi,
 } from "../services/supplierStorage";
-import type { Supplier, SupplierActionResult, SupplierInput } from "../types";
-
-function createSupplierId(): string {
-  return `supplier-${crypto.randomUUID()}`;
-}
+import type { SupplierActionResult, SupplierInput } from "../types";
 
 export function useSuppliers() {
   const suppliers = useSyncExternalStore(
@@ -26,12 +23,8 @@ export function useSuppliers() {
     getSuppliersServerSnapshot,
   );
 
-  const saveSuppliers = useCallback((nextSuppliers: Supplier[]) => {
-    persistSuppliers(nextSuppliers);
-  }, []);
-
   const createSupplier = useCallback(
-    (input: SupplierInput): SupplierActionResult => {
+    async (input: SupplierInput): Promise<SupplierActionResult> => {
       const validation = validateSupplierInput(input);
       if (!validation.ok) {
         return validation;
@@ -41,29 +34,27 @@ export function useSuppliers() {
         return { ok: false, error: "Já existe um fornecedor com este nome." };
       }
 
-      const supplier: Supplier = {
-        id: createSupplierId(),
-        name: input.name.trim(),
-        contactName: input.contactName?.trim() || undefined,
-        email: input.email?.trim() || undefined,
-        phone: input.phone?.trim() || undefined,
-        notes: input.notes?.trim() || undefined,
-        createdAt: new Date().toISOString(),
-      };
-
-      saveSuppliers([supplier, ...suppliers]);
-      return { ok: true };
+      try {
+        await createSupplierApi({
+          name: input.name.trim(),
+          contactName: input.contactName?.trim() || undefined,
+          email: input.email?.trim() || undefined,
+          phone: input.phone?.trim() || undefined,
+          notes: input.notes?.trim() || undefined,
+        });
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : "Não foi possível criar o fornecedor.",
+        };
+      }
     },
-    [suppliers, saveSuppliers],
+    [suppliers],
   );
 
   const updateSupplier = useCallback(
-    (id: string, input: SupplierInput): SupplierActionResult => {
-      const current = suppliers.find((supplier) => supplier.id === id);
-      if (!current) {
-        return { ok: false, error: "Fornecedor não encontrado." };
-      }
-
+    async (id: string, input: SupplierInput): Promise<SupplierActionResult> => {
       const validation = validateSupplierInput(input);
       if (!validation.ok) {
         return validation;
@@ -73,46 +64,36 @@ export function useSuppliers() {
         return { ok: false, error: "Já existe um fornecedor com este nome." };
       }
 
-      saveSuppliers(
-        suppliers.map((supplier) =>
-          supplier.id === id
-            ? {
-                ...supplier,
-                name: input.name.trim(),
-                contactName: input.contactName?.trim() || undefined,
-                email: input.email?.trim() || undefined,
-                phone: input.phone?.trim() || undefined,
-                notes: input.notes?.trim() || undefined,
-              }
-            : supplier,
-        ),
-      );
-
-      return { ok: true };
-    },
-    [suppliers, saveSuppliers],
-  );
-
-  const deleteSupplier = useCallback(
-    (id: string): SupplierActionResult => {
-      const current = suppliers.find((supplier) => supplier.id === id);
-      if (!current) {
-        return { ok: false, error: "Fornecedor não encontrado." };
-      }
-
-      const linkedPayables = countPayablesBySupplier(id);
-      if (linkedPayables > 0) {
+      try {
+        await updateSupplierApi(id, {
+          name: input.name.trim(),
+          contactName: input.contactName?.trim() || undefined,
+          email: input.email?.trim() || undefined,
+          phone: input.phone?.trim() || undefined,
+          notes: input.notes?.trim() || undefined,
+        });
+        return { ok: true };
+      } catch (error) {
         return {
           ok: false,
-          error: `Não é possível excluir: ${linkedPayables} conta(s) vinculada(s) a este fornecedor.`,
+          error: error instanceof Error ? error.message : "Não foi possível atualizar o fornecedor.",
         };
       }
-
-      saveSuppliers(suppliers.filter((supplier) => supplier.id !== id));
-      return { ok: true };
     },
-    [suppliers, saveSuppliers],
+    [suppliers],
   );
+
+  const deleteSupplier = useCallback(async (id: string): Promise<SupplierActionResult> => {
+    try {
+      await deleteSupplierApi(id);
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Não foi possível excluir o fornecedor.",
+      };
+    }
+  }, []);
 
   return {
     suppliers,

@@ -48,7 +48,7 @@ export function TableDetailPage({ tableId }: TableDetailPageProps) {
     );
   }
 
-  function handleReceive(payment: PaymentDetails): StockActionResult {
+  async function handleReceive(payment: PaymentDetails): Promise<StockActionResult> {
     return receivePayment(tableId, payment);
   }
 

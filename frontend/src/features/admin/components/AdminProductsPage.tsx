@@ -260,7 +260,7 @@ export function AdminProductsPage() {
     }));
   }
 
-  function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const price =
@@ -306,9 +306,9 @@ export function AdminProductsPage() {
         form.stockUnit === "un" && form.usesPackage ? form.packageUnit : undefined,
     };
 
-    const result = editingProduct
+    const result = await (editingProduct
       ? updateProduct(editingProduct.id, input)
-      : createProduct(input);
+      : createProduct(input));
 
     if (!result.ok) {
       setFormError(result.error ?? "Não foi possível salvar o produto.");
@@ -321,12 +321,12 @@ export function AdminProductsPage() {
     setFormError("");
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteTarget) {
       return;
     }
 
-    const result = deleteProduct(deleteTarget.id);
+    const result = await deleteProduct(deleteTarget.id);
     if (!result.ok) {
       setDeleteError(result.error ?? "Não foi possível excluir o produto.");
       return;

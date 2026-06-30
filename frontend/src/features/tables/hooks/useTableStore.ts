@@ -2,58 +2,42 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
+import { ApiError } from "@/lib/api";
 import {
   getProductsServerSnapshot,
   getProductsSnapshot,
   subscribeProducts,
 } from "@/features/menu/services/productStorage";
-import { createSaleFromTable, recordSale } from "@/features/sales/services/salesStorage";
 import type { PaymentDetails } from "@/features/sales/types";
-import {
-  canAddProductToOrder,
-  deductStockForOrder,
-  validateOrderStock,
-} from "@/features/stock/services/stockService";
 import type { StockActionResult } from "@/features/stock/types";
 
 import {
-  calculateTableTotal,
-  countTableItems,
+  addTableItemApi,
+  clearTableApi,
   getTablesServerSnapshot,
   getTablesSnapshot,
-  persistTables,
+  receivePaymentApi,
+  removeTableItemApi,
   subscribeTables,
 } from "../services/tableStorage";
-import type { Product, Table, TableOrderItem, TableWithDetails } from "../types";
+import type { Product, Table, TableWithDetails } from "../types";
 
-function enrichTable(table: Table, products: Product[]): TableWithDetails {
+function enrichTable(table: Table & { total?: number; itemCount?: number }, products: Product[]): TableWithDetails {
+  const total =
+    table.total ??
+    table.items.reduce((sum, item) => {
+      const product = products.find((entry) => entry.id === item.productId);
+      return sum + (product?.price ?? 0) * item.quantity;
+    }, 0);
+
+  const itemCount =
+    table.itemCount ?? table.items.reduce((count, item) => count + item.quantity, 0);
+
   return {
     ...table,
-    total: calculateTableTotal(table.items, products),
-    itemCount: countTableItems(table.items),
+    total,
+    itemCount,
   };
-}
-
-function updateTableItems(
-  tables: Table[],
-  tableId: number,
-  updater: (items: TableOrderItem[]) => TableOrderItem[],
-): Table[] {
-  return tables.map((table) => {
-    if (table.id !== tableId) {
-      return table;
-    }
-
-    const items = updater(table.items);
-    const status = items.length > 0 ? "occupied" : "free";
-
-    return {
-      ...table,
-      items,
-      status,
-      openedAt: items.length > 0 ? (table.openedAt ?? new Date().toISOString()) : undefined,
-    };
-  });
 }
 
 export function useTableStore() {
@@ -69,10 +53,6 @@ export function useTableStore() {
     getTablesServerSnapshot,
   );
 
-  const saveTables = useCallback((nextTables: Table[]) => {
-    persistTables(nextTables);
-  }, []);
-
   const getTable = useCallback(
     (tableId: number): TableWithDetails | undefined => {
       const table = tables.find((t) => t.id === tableId);
@@ -82,102 +62,42 @@ export function useTableStore() {
   );
 
   const addProduct = useCallback(
-    (tableId: number, productId: string): StockActionResult => {
-      const product = products.find((entry) => entry.id === productId);
-      if (!product) {
-        return { ok: false, error: "Produto não encontrado." };
+    async (tableId: number, productId: string): Promise<StockActionResult> => {
+      try {
+        await addTableItemApi(tableId, productId);
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof ApiError ? error.message : "Não foi possível adicionar o produto.",
+        };
       }
-
-      const table = tables.find((entry) => entry.id === tableId);
-      const currentQuantity =
-        table?.items.find((item) => item.productId === productId)?.quantity ?? 0;
-
-      const availability = canAddProductToOrder(product, currentQuantity);
-      if (!availability.ok) {
-        return availability;
-      }
-
-      saveTables(
-        updateTableItems(tables, tableId, (items) => {
-          const existing = items.find((item) => item.productId === productId);
-          if (existing) {
-            return items.map((item) =>
-              item.productId === productId
-                ? { ...item, quantity: item.quantity + 1 }
-                : item,
-            );
-          }
-          return [...items, { productId, quantity: 1 }];
-        }),
-      );
-
-      return { ok: true };
     },
-    [tables, products, saveTables],
+    [],
   );
 
-  const removeProduct = useCallback(
-    (tableId: number, productId: string) => {
-      saveTables(
-        updateTableItems(tables, tableId, (items) => {
-          return items
-            .map((item) =>
-              item.productId === productId
-                ? { ...item, quantity: item.quantity - 1 }
-                : item,
-            )
-            .filter((item) => item.quantity > 0);
-        }),
-      );
-    },
-    [tables, saveTables],
-  );
+  const removeProduct = useCallback(async (tableId: number, productId: string) => {
+    await removeTableItemApi(tableId, productId);
+  }, []);
 
   const receivePayment = useCallback(
-    (tableId: number, payment: PaymentDetails): StockActionResult => {
-      const table = tables.find((entry) => entry.id === tableId);
-      if (!table || table.items.length === 0) {
+    async (tableId: number, payment: PaymentDetails): Promise<StockActionResult> => {
+      try {
+        await receivePaymentApi(tableId, payment);
         return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof ApiError ? error.message : "Não foi possível registrar o pagamento.",
+        };
       }
-
-      const stockValidation = validateOrderStock(table.items, products);
-      if (!stockValidation.ok) {
-        return stockValidation;
-      }
-
-      const sale = createSaleFromTable(table, payment);
-      const stockDeduction = deductStockForOrder(table.items, sale.id);
-      if (!stockDeduction.ok) {
-        return stockDeduction;
-      }
-
-      recordSale(sale);
-
-      saveTables(
-        tables.map((entry) =>
-          entry.id === tableId
-            ? { ...entry, status: "free", items: [], openedAt: undefined }
-            : entry,
-        ),
-      );
-
-      return { ok: true };
     },
-    [tables, products, saveTables],
+    [],
   );
 
-  const clearTable = useCallback(
-    (tableId: number) => {
-      saveTables(
-        tables.map((table) =>
-          table.id === tableId
-            ? { ...table, status: "free", items: [], openedAt: undefined }
-            : table,
-        ),
-      );
-    },
-    [tables, saveTables],
-  );
+  const clearTable = useCallback(async (tableId: number) => {
+    await clearTableApi(tableId);
+  }, []);
 
   const enrichedTables = tables.map((table) => enrichTable(table, products));
 

@@ -25,7 +25,7 @@ interface OrderSummaryProps {
   items: TableOrderItem[];
   tableNumber: number;
   onRemove: (productId: string) => void;
-  onReceive: (payment: PaymentDetails) => StockActionResult;
+  onReceive: (payment: PaymentDetails) => StockActionResult | Promise<StockActionResult>;
 }
 
 interface ItemToRemove {
@@ -54,7 +54,7 @@ export function OrderSummary({
   const stockValidation = validateOrderStock(items, products);
   const stockWarning = stockValidation.ok ? null : stockValidation.error;
 
-  function handleConfirmPayment(payment: PaymentDetails): StockActionResult {
+  async function handleConfirmPayment(payment: PaymentDetails): Promise<StockActionResult> {
     return onReceive(payment);
   }
 

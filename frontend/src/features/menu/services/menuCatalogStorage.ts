@@ -1,72 +1,23 @@
-import { createInitialMenuCatalog } from "../data/initialMenuCatalog";
 import type { MenuCategory } from "../types";
+import { apiFetch } from "@/lib/api";
+import { createApiStore } from "@/lib/apiStore";
 
-const STORAGE_KEY = "restaurant-menu-catalog";
-const STORAGE_EVENT = "restaurant-menu-catalog-change";
+const store = createApiStore<MenuCategory[]>({
+  fetchSnapshot: () => apiFetch<MenuCategory[]>("/menu/categories"),
+  serverSnapshot: [],
+  eventName: "restaurant-menu-catalog-change",
+});
 
-const SERVER_SNAPSHOT = createInitialMenuCatalog();
+export const subscribeMenuCatalog = store.subscribe;
+export const getMenuCatalogSnapshot = store.getSnapshot;
+export const getMenuCatalogServerSnapshot = store.getServerSnapshot;
 
-let cachedClientRaw: string | null | undefined;
-let cachedClientSnapshot: MenuCategory[] | null = null;
-
-function parseStoredCatalog(raw: string): MenuCategory[] {
-  try {
-    const parsed = JSON.parse(raw) as MenuCategory[];
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : SERVER_SNAPSHOT;
-  } catch {
-    return SERVER_SNAPSHOT;
-  }
+export async function refreshMenuCatalog(): Promise<MenuCategory[]> {
+  return store.refresh();
 }
 
-function readCatalogFromStorage(): MenuCategory[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === cachedClientRaw && cachedClientSnapshot !== null) {
-      return cachedClientSnapshot;
-    }
-
-    cachedClientRaw = raw;
-    cachedClientSnapshot = raw ? parseStoredCatalog(raw) : SERVER_SNAPSHOT;
-    return cachedClientSnapshot;
-  } catch {
-    cachedClientRaw = null;
-    cachedClientSnapshot = SERVER_SNAPSHOT;
-    return SERVER_SNAPSHOT;
-  }
-}
-
-export function subscribeMenuCatalog(onStoreChange: () => void): () => void {
-  const handler = (event: Event) => {
-    if (event.type === "storage") {
-      cachedClientRaw = undefined;
-      cachedClientSnapshot = null;
-    }
-    onStoreChange();
-  };
-
-  window.addEventListener(STORAGE_EVENT, handler);
-  window.addEventListener("storage", handler);
-
-  return () => {
-    window.removeEventListener(STORAGE_EVENT, handler);
-    window.removeEventListener("storage", handler);
-  };
-}
-
-export function getMenuCatalogSnapshot(): MenuCategory[] {
-  return readCatalogFromStorage();
-}
-
-export function getMenuCatalogServerSnapshot(): MenuCategory[] {
-  return SERVER_SNAPSHOT;
-}
-
-export function persistMenuCatalog(categories: MenuCategory[]): void {
-  const serialized = JSON.stringify(categories);
-  localStorage.setItem(STORAGE_KEY, serialized);
-  cachedClientRaw = serialized;
-  cachedClientSnapshot = categories;
-  window.dispatchEvent(new Event(STORAGE_EVENT));
+export function persistMenuCatalog(_categories: MenuCategory[]): void {
+  void store.refresh();
 }
 
 export function getCategoryNames(categories: MenuCategory[]): string[] {
@@ -93,4 +44,53 @@ export function findSubcategoryById(
   subcategoryId: string,
 ): MenuCategory["subcategories"][number] | undefined {
   return category.subcategories.find((subcategory) => subcategory.id === subcategoryId);
+}
+
+export async function addCategoryApi(name: string): Promise<MenuCategory> {
+  const category = await apiFetch<MenuCategory>("/menu/categories", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+  await store.refresh();
+  return category;
+}
+
+export async function updateCategoryApi(id: string, name: string): Promise<MenuCategory> {
+  const category = await apiFetch<MenuCategory>(`/menu/categories/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+  await store.refresh();
+  return category;
+}
+
+export async function deleteCategoryApi(id: string): Promise<void> {
+  await apiFetch<void>(`/menu/categories/${id}`, { method: "DELETE" });
+  await store.refresh();
+}
+
+export async function addSubcategoryApi(
+  categoryId: string,
+  name: string,
+): Promise<MenuCategory> {
+  const category = await apiFetch<MenuCategory>(`/menu/categories/${categoryId}/subcategories`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+  await store.refresh();
+  return category;
+}
+
+export async function updateSubcategoryApi(id: string, name: string): Promise<MenuCategory> {
+  const category = await apiFetch<MenuCategory>(`/menu/subcategories/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+  await store.refresh();
+  return category;
+}
+
+export async function deleteSubcategoryApi(id: string): Promise<void> {
+  await apiFetch<void>(`/menu/subcategories/${id}`, { method: "DELETE" });
+  await store.refresh();
 }

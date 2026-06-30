@@ -1,70 +1,43 @@
-import { SEED_SUPPLIERS } from "../data/seedSuppliers";
 import type { Supplier } from "../types";
+import { apiFetch } from "@/lib/api";
+import { createApiStore } from "@/lib/apiStore";
 
-const STORAGE_KEY = "restaurant-suppliers";
-const STORAGE_EVENT = "restaurant-suppliers-change";
+const store = createApiStore<Supplier[]>({
+  fetchSnapshot: () => apiFetch<Supplier[]>("/suppliers"),
+  serverSnapshot: [],
+  eventName: "restaurant-suppliers-change",
+});
 
-const SERVER_SNAPSHOT = SEED_SUPPLIERS;
+export const subscribeSuppliers = store.subscribe;
+export const getSuppliersSnapshot = store.getSnapshot;
+export const getSuppliersServerSnapshot = store.getServerSnapshot;
 
-let cachedClientRaw: string | null | undefined;
-let cachedClientSnapshot: Supplier[] | null = null;
-
-function parseStoredSuppliers(raw: string): Supplier[] {
-  try {
-    const parsed = JSON.parse(raw) as Supplier[];
-    return Array.isArray(parsed) ? parsed : SERVER_SNAPSHOT;
-  } catch {
-    return SERVER_SNAPSHOT;
-  }
+export function persistSuppliers(_suppliers: Supplier[]): void {
+  void store.refresh();
 }
 
-function readSuppliersFromStorage(): Supplier[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === cachedClientRaw && cachedClientSnapshot !== null) {
-      return cachedClientSnapshot;
-    }
-
-    cachedClientRaw = raw;
-    cachedClientSnapshot = raw ? parseStoredSuppliers(raw) : SERVER_SNAPSHOT;
-    return cachedClientSnapshot;
-  } catch {
-    cachedClientRaw = null;
-    cachedClientSnapshot = SERVER_SNAPSHOT;
-    return SERVER_SNAPSHOT;
-  }
+export async function createSupplierApi(body: Record<string, unknown>): Promise<Supplier> {
+  const supplier = await apiFetch<Supplier>("/suppliers", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  await store.refresh();
+  return supplier;
 }
 
-export function subscribeSuppliers(onStoreChange: () => void): () => void {
-  const handler = (event: Event) => {
-    if (event.type === "storage") {
-      cachedClientRaw = undefined;
-      cachedClientSnapshot = null;
-    }
-    onStoreChange();
-  };
-
-  window.addEventListener(STORAGE_EVENT, handler);
-  window.addEventListener("storage", handler);
-
-  return () => {
-    window.removeEventListener(STORAGE_EVENT, handler);
-    window.removeEventListener("storage", handler);
-  };
+export async function updateSupplierApi(
+  id: string,
+  body: Record<string, unknown>,
+): Promise<Supplier> {
+  const supplier = await apiFetch<Supplier>(`/suppliers/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  await store.refresh();
+  return supplier;
 }
 
-export function getSuppliersSnapshot(): Supplier[] {
-  return readSuppliersFromStorage();
-}
-
-export function getSuppliersServerSnapshot(): Supplier[] {
-  return SERVER_SNAPSHOT;
-}
-
-export function persistSuppliers(suppliers: Supplier[]): void {
-  const serialized = JSON.stringify(suppliers);
-  localStorage.setItem(STORAGE_KEY, serialized);
-  cachedClientRaw = serialized;
-  cachedClientSnapshot = suppliers;
-  window.dispatchEvent(new Event(STORAGE_EVENT));
+export async function deleteSupplierApi(id: string): Promise<void> {
+  await apiFetch<void>(`/suppliers/${id}`, { method: "DELETE" });
+  await store.refresh();
 }

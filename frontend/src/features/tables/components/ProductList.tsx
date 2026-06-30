@@ -18,7 +18,7 @@ import type { TableOrderItem } from "../types";
 
 interface ProductListProps {
   items: TableOrderItem[];
-  onAdd: (productId: string) => StockActionResult;
+  onAdd: (productId: string) => StockActionResult | Promise<StockActionResult>;
 }
 
 export function ProductList({ items, onAdd }: ProductListProps) {
@@ -51,8 +51,8 @@ export function ProductList({ items, onAdd }: ProductListProps) {
     setSelectedSubcategory(subcategory);
   }
 
-  function handleAddProduct(productId: string) {
-    const result = onAdd(productId);
+  async function handleAddProduct(productId: string) {
+    const result = await onAdd(productId);
     if (!result.ok) {
       setAddError(result.error ?? "Não foi possível adicionar o produto.");
       return;

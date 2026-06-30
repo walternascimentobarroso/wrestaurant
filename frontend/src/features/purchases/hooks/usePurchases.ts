@@ -7,7 +7,7 @@ import {
   getPurchasesSnapshot,
   subscribePurchases,
 } from "../services/purchaseStorage";
-import { recordPurchase } from "../services/purchaseService";
+import { recordPurchaseAsync } from "../services/purchaseService";
 import type { PurchaseActionResult, PurchaseInput } from "../types";
 import {
   compareWithLastPurchase,
@@ -25,7 +25,7 @@ export function usePurchases() {
   );
 
   const recordProductPurchase = useCallback(
-    (input: PurchaseInput): PurchaseActionResult => recordPurchase(input),
+    (input: PurchaseInput): Promise<PurchaseActionResult> => recordPurchaseAsync(input),
     [],
   );
 

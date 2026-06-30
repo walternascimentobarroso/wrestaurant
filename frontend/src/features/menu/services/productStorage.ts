@@ -1,76 +1,23 @@
-import { FAKE_PRODUCTS } from "@/features/tables/data/fakeProducts";
 import type { Product } from "@/features/tables/types";
-import { normalizeProducts } from "@/features/stock/utils/productStock";
+import { apiFetch } from "@/lib/api";
+import { createApiStore } from "@/lib/apiStore";
 
-const STORAGE_KEY = "restaurant-products";
-const STORAGE_EVENT = "restaurant-products-change";
+const store = createApiStore<Product[]>({
+  fetchSnapshot: () => apiFetch<Product[]>("/products"),
+  serverSnapshot: [],
+  eventName: "restaurant-products-change",
+});
 
-const SERVER_SNAPSHOT = normalizeProducts(FAKE_PRODUCTS);
+export const subscribeProducts = store.subscribe;
+export const getProductsSnapshot = store.getSnapshot;
+export const getProductsServerSnapshot = store.getServerSnapshot;
 
-let cachedClientRaw: string | null | undefined;
-let cachedClientSnapshot: Product[] | null = null;
-
-function parseStoredProducts(raw: string): Product[] {
-  try {
-    const parsed = JSON.parse(raw) as Product[];
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return SERVER_SNAPSHOT;
-    }
-    return normalizeProducts(parsed);
-  } catch {
-    return SERVER_SNAPSHOT;
-  }
+export async function refreshProducts(): Promise<Product[]> {
+  return store.refresh();
 }
 
-function readProductsFromStorage(): Product[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === cachedClientRaw && cachedClientSnapshot !== null) {
-      return cachedClientSnapshot;
-    }
-
-    cachedClientRaw = raw;
-    cachedClientSnapshot = raw ? parseStoredProducts(raw) : SERVER_SNAPSHOT;
-    return cachedClientSnapshot;
-  } catch {
-    cachedClientRaw = null;
-    cachedClientSnapshot = SERVER_SNAPSHOT;
-    return SERVER_SNAPSHOT;
-  }
-}
-
-export function subscribeProducts(onStoreChange: () => void): () => void {
-  const handler = (event: Event) => {
-    if (event.type === "storage") {
-      cachedClientRaw = undefined;
-      cachedClientSnapshot = null;
-    }
-    onStoreChange();
-  };
-
-  window.addEventListener(STORAGE_EVENT, handler);
-  window.addEventListener("storage", handler);
-
-  return () => {
-    window.removeEventListener(STORAGE_EVENT, handler);
-    window.removeEventListener("storage", handler);
-  };
-}
-
-export function getProductsSnapshot(): Product[] {
-  return readProductsFromStorage();
-}
-
-export function getProductsServerSnapshot(): Product[] {
-  return SERVER_SNAPSHOT;
-}
-
-export function persistProducts(products: Product[]): void {
-  const serialized = JSON.stringify(products);
-  localStorage.setItem(STORAGE_KEY, serialized);
-  cachedClientRaw = serialized;
-  cachedClientSnapshot = products;
-  window.dispatchEvent(new Event(STORAGE_EVENT));
+export function persistProducts(_products: Product[]): void {
+  void store.refresh();
 }
 
 export function countProductsByCategory(products: Product[], categoryName: string): number {
@@ -119,4 +66,30 @@ export function getProductsByCategoryAndSubcategory(
   return products.filter(
     (product) => product.category === category && product.subcategory === subcategory,
   );
+}
+
+export async function createProductApi(body: Record<string, unknown>): Promise<Product> {
+  const product = await apiFetch<Product>("/products", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  await store.refresh();
+  return product;
+}
+
+export async function updateProductApi(
+  id: string,
+  body: Record<string, unknown>,
+): Promise<Product> {
+  const product = await apiFetch<Product>(`/products/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  await store.refresh();
+  return product;
+}
+
+export async function deleteProductApi(id: string): Promise<void> {
+  await apiFetch<void>(`/products/${id}`, { method: "DELETE" });
+  await store.refresh();
 }

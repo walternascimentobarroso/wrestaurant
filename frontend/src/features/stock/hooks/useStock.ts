@@ -60,12 +60,12 @@ export function useStock() {
   );
 
   const adjustStock = useCallback(
-    (
+    async (
       productId: string,
       delta: number,
       type: StockMovementType,
       reason: string,
-    ): StockActionResult => adjustProductStock(productId, delta, type, reason),
+    ): Promise<StockActionResult> => adjustProductStock(productId, delta, type, reason),
     [],
   );
 

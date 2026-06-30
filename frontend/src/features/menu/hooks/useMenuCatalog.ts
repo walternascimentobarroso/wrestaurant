@@ -3,31 +3,20 @@
 import { useCallback, useSyncExternalStore } from "react";
 
 import {
+  addCategoryApi,
+  addSubcategoryApi,
+  deleteCategoryApi,
+  deleteSubcategoryApi,
   getMenuCatalogServerSnapshot,
   getMenuCatalogSnapshot,
-  persistMenuCatalog,
   subscribeMenuCatalog,
+  updateCategoryApi,
+  updateSubcategoryApi,
 } from "../services/menuCatalogStorage";
-import {
-  countProductsByCategory,
-  countProductsBySubcategory,
-  getProductsSnapshot,
-  persistProducts,
-  renameCategoryInProducts,
-  renameSubcategoryInProducts,
-} from "../services/productStorage";
-import type { MenuCatalogActionResult, MenuCategory } from "../types";
+import type { MenuCatalogActionResult } from "../types";
 
 function normalizeName(value: string): string {
   return value.trim();
-}
-
-function createCategoryId(): string {
-  return `cat-${crypto.randomUUID()}`;
-}
-
-function createSubcategoryId(): string {
-  return `sub-${crypto.randomUUID()}`;
 }
 
 function validateName(value: string): string | null {
@@ -44,240 +33,116 @@ export function useMenuCatalog() {
     getMenuCatalogServerSnapshot,
   );
 
-  const saveCategories = useCallback((nextCategories: MenuCategory[]) => {
-    persistMenuCatalog(nextCategories);
+  const addCategory = useCallback(async (name: string): Promise<MenuCatalogActionResult> => {
+    const normalizedName = normalizeName(name);
+    const nameError = validateName(normalizedName);
+    if (nameError) {
+      return { ok: false, error: nameError };
+    }
+
+    try {
+      await addCategoryApi(normalizedName);
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Não foi possível criar a categoria.",
+      };
+    }
   }, []);
 
-  const addCategory = useCallback(
-    (name: string): MenuCatalogActionResult => {
-      const normalizedName = normalizeName(name);
-      const nameError = validateName(normalizedName);
-      if (nameError) {
-        return { ok: false, error: nameError };
-      }
-
-      if (categories.some((category) => category.name.toLowerCase() === normalizedName.toLowerCase())) {
-        return { ok: false, error: "Já existe uma categoria com este nome." };
-      }
-
-      saveCategories([
-        ...categories,
-        {
-          id: createCategoryId(),
-          name: normalizedName,
-          subcategories: [],
-        },
-      ]);
-
-      return { ok: true };
-    },
-    [categories, saveCategories],
-  );
-
   const updateCategory = useCallback(
-    (categoryId: string, name: string): MenuCatalogActionResult => {
-      const category = categories.find((entry) => entry.id === categoryId);
-      if (!category) {
-        return { ok: false, error: "Categoria não encontrada." };
-      }
-
+    async (categoryId: string, name: string): Promise<MenuCatalogActionResult> => {
       const normalizedName = normalizeName(name);
       const nameError = validateName(normalizedName);
       if (nameError) {
         return { ok: false, error: nameError };
       }
 
-      if (
-        categories.some(
-          (entry) =>
-            entry.id !== categoryId &&
-            entry.name.toLowerCase() === normalizedName.toLowerCase(),
-        )
-      ) {
-        return { ok: false, error: "Já existe uma categoria com este nome." };
-      }
-
-      saveCategories(
-        categories.map((entry) =>
-          entry.id === categoryId ? { ...entry, name: normalizedName } : entry,
-        ),
-      );
-
-      if (category.name !== normalizedName) {
-        const products = getProductsSnapshot();
-        persistProducts(renameCategoryInProducts(products, category.name, normalizedName));
-      }
-
-      return { ok: true };
-    },
-    [categories, saveCategories],
-  );
-
-  const deleteCategory = useCallback(
-    (categoryId: string): MenuCatalogActionResult => {
-      const category = categories.find((entry) => entry.id === categoryId);
-      if (!category) {
-        return { ok: false, error: "Categoria não encontrada." };
-      }
-
-      const productCount = countProductsByCategory(getProductsSnapshot(), category.name);
-      if (productCount > 0) {
+      try {
+        await updateCategoryApi(categoryId, normalizedName);
+        return { ok: true };
+      } catch (error) {
         return {
           ok: false,
-          error: `Não é possível excluir: ${productCount} produto(s) usam esta categoria.`,
+          error: error instanceof Error ? error.message : "Não foi possível atualizar a categoria.",
         };
       }
-
-      saveCategories(categories.filter((entry) => entry.id !== categoryId));
-      return { ok: true };
     },
-    [categories, saveCategories],
+    [],
   );
 
-  const addSubcategory = useCallback(
-    (categoryId: string, name: string): MenuCatalogActionResult => {
-      const category = categories.find((entry) => entry.id === categoryId);
-      if (!category) {
-        return { ok: false, error: "Categoria não encontrada." };
-      }
+  const deleteCategory = useCallback(async (categoryId: string): Promise<MenuCatalogActionResult> => {
+    try {
+      await deleteCategoryApi(categoryId);
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Não foi possível excluir a categoria.",
+      };
+    }
+  }, []);
 
+  const addSubcategory = useCallback(
+    async (categoryId: string, name: string): Promise<MenuCatalogActionResult> => {
       const normalizedName = normalizeName(name);
       const nameError = validateName(normalizedName);
       if (nameError) {
         return { ok: false, error: nameError };
       }
 
-      if (
-        category.subcategories.some(
-          (subcategory) =>
-            subcategory.name.toLowerCase() === normalizedName.toLowerCase(),
-        )
-      ) {
-        return { ok: false, error: "Já existe uma subcategoria com este nome." };
+      try {
+        await addSubcategoryApi(categoryId, normalizedName);
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : "Não foi possível criar a subcategoria.",
+        };
       }
-
-      saveCategories(
-        categories.map((entry) =>
-          entry.id === categoryId
-            ? {
-                ...entry,
-                subcategories: [
-                  ...entry.subcategories,
-                  { id: createSubcategoryId(), name: normalizedName },
-                ],
-              }
-            : entry,
-        ),
-      );
-
-      return { ok: true };
     },
-    [categories, saveCategories],
+    [],
   );
 
   const updateSubcategory = useCallback(
-    (
+    async (
       categoryId: string,
       subcategoryId: string,
       name: string,
-    ): MenuCatalogActionResult => {
-      const category = categories.find((entry) => entry.id === categoryId);
-      if (!category) {
-        return { ok: false, error: "Categoria não encontrada." };
-      }
-
-      const subcategory = category.subcategories.find((entry) => entry.id === subcategoryId);
-      if (!subcategory) {
-        return { ok: false, error: "Subcategoria não encontrada." };
-      }
-
+    ): Promise<MenuCatalogActionResult> => {
       const normalizedName = normalizeName(name);
       const nameError = validateName(normalizedName);
       if (nameError) {
         return { ok: false, error: nameError };
       }
 
-      if (
-        category.subcategories.some(
-          (entry) =>
-            entry.id !== subcategoryId &&
-            entry.name.toLowerCase() === normalizedName.toLowerCase(),
-        )
-      ) {
-        return { ok: false, error: "Já existe uma subcategoria com este nome." };
+      try {
+        await updateSubcategoryApi(subcategoryId, normalizedName);
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: error instanceof Error ? error.message : "Não foi possível atualizar a subcategoria.",
+        };
       }
-
-      saveCategories(
-        categories.map((entry) =>
-          entry.id === categoryId
-            ? {
-                ...entry,
-                subcategories: entry.subcategories.map((item) =>
-                  item.id === subcategoryId ? { ...item, name: normalizedName } : item,
-                ),
-              }
-            : entry,
-        ),
-      );
-
-      if (subcategory.name !== normalizedName) {
-        const products = getProductsSnapshot();
-        persistProducts(
-          renameSubcategoryInProducts(
-            products,
-            category.name,
-            subcategory.name,
-            normalizedName,
-          ),
-        );
-      }
-
-      return { ok: true };
     },
-    [categories, saveCategories],
+    [],
   );
 
   const deleteSubcategory = useCallback(
-    (categoryId: string, subcategoryId: string): MenuCatalogActionResult => {
-      const category = categories.find((entry) => entry.id === categoryId);
-      if (!category) {
-        return { ok: false, error: "Categoria não encontrada." };
-      }
-
-      const subcategory = category.subcategories.find((entry) => entry.id === subcategoryId);
-      if (!subcategory) {
-        return { ok: false, error: "Subcategoria não encontrada." };
-      }
-
-      const productCount = countProductsBySubcategory(
-        getProductsSnapshot(),
-        category.name,
-        subcategory.name,
-      );
-
-      if (productCount > 0) {
+    async (categoryId: string, subcategoryId: string): Promise<MenuCatalogActionResult> => {
+      try {
+        await deleteSubcategoryApi(subcategoryId);
+        return { ok: true };
+      } catch (error) {
         return {
           ok: false,
-          error: `Não é possível excluir: ${productCount} produto(s) usam esta subcategoria.`,
+          error: error instanceof Error ? error.message : "Não foi possível excluir a subcategoria.",
         };
       }
-
-      saveCategories(
-        categories.map((entry) =>
-          entry.id === categoryId
-            ? {
-                ...entry,
-                subcategories: entry.subcategories.filter(
-                  (item) => item.id !== subcategoryId,
-                ),
-              }
-            : entry,
-        ),
-      );
-
-      return { ok: true };
     },
-    [categories, saveCategories],
+    [],
   );
 
   return {

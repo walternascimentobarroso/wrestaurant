@@ -1,95 +1,63 @@
-import { buildSeedPayables } from "../data/seedPayables";
-import type { Payable, PayableRecurrence } from "../types";
+import type { Payable } from "../types";
+import { apiFetch } from "@/lib/api";
+import { createApiStore } from "@/lib/apiStore";
 
-const STORAGE_KEY = "restaurant-payables";
-const STORAGE_EVENT = "restaurant-payables-change";
+const store = createApiStore<Payable[]>({
+  fetchSnapshot: () => apiFetch<Payable[]>("/payables"),
+  serverSnapshot: [],
+  eventName: "restaurant-payables-change",
+});
 
-const SERVER_SNAPSHOT = buildSeedPayables();
+export const subscribePayables = store.subscribe;
+export const getPayablesSnapshot = store.getSnapshot;
+export const getPayablesServerSnapshot = store.getServerSnapshot;
 
-let cachedClientRaw: string | null | undefined;
-let cachedClientSnapshot: Payable[] | null = null;
-
-interface LegacyPayable extends Partial<Payable> {
-  supplier?: string;
+export function persistPayables(_payables: Payable[]): void {
+  void store.refresh();
 }
 
-function normalizeRecurrence(value: PayableRecurrence | undefined): PayableRecurrence {
-  return value ?? "none";
+export async function createPayableApi(body: Record<string, unknown>): Promise<Payable> {
+  const payable = await apiFetch<Payable>("/payables", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  await store.refresh();
+  return payable;
 }
 
-function normalizePayable(raw: LegacyPayable): Payable {
-  return {
-    id: raw.id ?? "",
-    categoryId: raw.categoryId ?? "other",
-    description: raw.description ?? "",
-    supplierId: raw.supplierId,
-    amount: raw.amount ?? 0,
-    dueDate: raw.dueDate ?? "",
-    recurrence: normalizeRecurrence(raw.recurrence),
-    status: raw.status ?? "pending",
-    paidAt: raw.paidAt,
-    paidAmount: raw.paidAmount,
-    notes: raw.notes,
-    createdAt: raw.createdAt ?? new Date().toISOString(),
-  };
+export async function updatePayableApi(
+  id: string,
+  body: Record<string, unknown>,
+): Promise<Payable> {
+  const payable = await apiFetch<Payable>(`/payables/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  await store.refresh();
+  return payable;
 }
 
-function parseStoredPayables(raw: string): Payable[] {
-  try {
-    const parsed = JSON.parse(raw) as LegacyPayable[];
-    return Array.isArray(parsed) ? parsed.map(normalizePayable) : SERVER_SNAPSHOT;
-  } catch {
-    return SERVER_SNAPSHOT;
-  }
+export async function deletePayableApi(id: string): Promise<void> {
+  await apiFetch<void>(`/payables/${id}`, { method: "DELETE" });
+  await store.refresh();
 }
 
-function readPayablesFromStorage(): Payable[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === cachedClientRaw && cachedClientSnapshot !== null) {
-      return cachedClientSnapshot;
-    }
-
-    cachedClientRaw = raw;
-    cachedClientSnapshot = raw ? parseStoredPayables(raw) : SERVER_SNAPSHOT;
-    return cachedClientSnapshot;
-  } catch {
-    cachedClientRaw = null;
-    cachedClientSnapshot = SERVER_SNAPSHOT;
-    return SERVER_SNAPSHOT;
-  }
+export async function markPayablePaidApi(
+  id: string,
+  body: { paidAt: string; paidAmount: number },
+): Promise<Payable> {
+  const payable = await apiFetch<Payable>(`/payables/${id}/mark-paid`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  await store.refresh();
+  return payable;
 }
 
-export function subscribePayables(onStoreChange: () => void): () => void {
-  const handler = (event: Event) => {
-    if (event.type === "storage") {
-      cachedClientRaw = undefined;
-      cachedClientSnapshot = null;
-    }
-    onStoreChange();
-  };
-
-  window.addEventListener(STORAGE_EVENT, handler);
-  window.addEventListener("storage", handler);
-
-  return () => {
-    window.removeEventListener(STORAGE_EVENT, handler);
-    window.removeEventListener("storage", handler);
-  };
-}
-
-export function getPayablesSnapshot(): Payable[] {
-  return readPayablesFromStorage();
-}
-
-export function getPayablesServerSnapshot(): Payable[] {
-  return SERVER_SNAPSHOT;
-}
-
-export function persistPayables(payables: Payable[]): void {
-  const serialized = JSON.stringify(payables);
-  localStorage.setItem(STORAGE_KEY, serialized);
-  cachedClientRaw = serialized;
-  cachedClientSnapshot = payables;
-  window.dispatchEvent(new Event(STORAGE_EVENT));
+export async function markPayablePendingApi(id: string): Promise<Payable> {
+  const payable = await apiFetch<Payable>(`/payables/${id}/mark-pending`, {
+    method: "POST",
+  });
+  await store.refresh();
+  return payable;
 }

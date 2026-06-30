@@ -1,74 +1,30 @@
 import type { PurchaseRecord } from "../types";
+import { apiFetch } from "@/lib/api";
+import { createApiStore } from "@/lib/apiStore";
 
-const STORAGE_KEY = "restaurant-purchase-history";
-const STORAGE_EVENT = "restaurant-purchase-history-change";
+const store = createApiStore<PurchaseRecord[]>({
+  fetchSnapshot: () => apiFetch<PurchaseRecord[]>("/purchases"),
+  serverSnapshot: [],
+  eventName: "restaurant-purchase-history-change",
+});
 
-const SERVER_SNAPSHOT: PurchaseRecord[] = [];
+export const subscribePurchases = store.subscribe;
+export const getPurchasesSnapshot = store.getSnapshot;
+export const getPurchasesServerSnapshot = store.getServerSnapshot;
 
-let cachedClientRaw: string | null | undefined;
-let cachedClientSnapshot: PurchaseRecord[] | null = null;
-
-function parseStoredPurchases(raw: string): PurchaseRecord[] {
-  try {
-    const parsed = JSON.parse(raw) as PurchaseRecord[];
-    return Array.isArray(parsed) ? parsed : SERVER_SNAPSHOT;
-  } catch {
-    return SERVER_SNAPSHOT;
-  }
+export function persistPurchases(_records: PurchaseRecord[]): void {
+  void store.refresh();
 }
 
-function readPurchasesFromStorage(): PurchaseRecord[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === cachedClientRaw && cachedClientSnapshot !== null) {
-      return cachedClientSnapshot;
-    }
-
-    cachedClientRaw = raw;
-    cachedClientSnapshot = raw ? parseStoredPurchases(raw) : SERVER_SNAPSHOT;
-    return cachedClientSnapshot;
-  } catch {
-    cachedClientRaw = null;
-    cachedClientSnapshot = SERVER_SNAPSHOT;
-    return SERVER_SNAPSHOT;
-  }
+export function appendPurchaseRecord(_record: PurchaseRecord): void {
+  void store.refresh();
 }
 
-export function subscribePurchases(onStoreChange: () => void): () => void {
-  const handler = (event: Event) => {
-    if (event.type === "storage") {
-      cachedClientRaw = undefined;
-      cachedClientSnapshot = null;
-    }
-    onStoreChange();
-  };
-
-  window.addEventListener(STORAGE_EVENT, handler);
-  window.addEventListener("storage", handler);
-
-  return () => {
-    window.removeEventListener(STORAGE_EVENT, handler);
-    window.removeEventListener("storage", handler);
-  };
-}
-
-export function getPurchasesSnapshot(): PurchaseRecord[] {
-  return readPurchasesFromStorage();
-}
-
-export function getPurchasesServerSnapshot(): PurchaseRecord[] {
-  return SERVER_SNAPSHOT;
-}
-
-export function persistPurchases(records: PurchaseRecord[]): void {
-  const serialized = JSON.stringify(records);
-  localStorage.setItem(STORAGE_KEY, serialized);
-  cachedClientRaw = serialized;
-  cachedClientSnapshot = records;
-  window.dispatchEvent(new Event(STORAGE_EVENT));
-}
-
-export function appendPurchaseRecord(record: PurchaseRecord): void {
-  const existing = readPurchasesFromStorage();
-  persistPurchases([record, ...existing]);
+export async function recordPurchaseApi(body: Record<string, unknown>): Promise<PurchaseRecord> {
+  const record = await apiFetch<PurchaseRecord>("/purchases", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  await store.refresh();
+  return record;
 }

@@ -4,6 +4,8 @@ import {
   buildSaleIdFromMutationId,
 } from "@/features/sales/services/saleMutations";
 import { recordSale } from "@/features/sales/services/salesStorage";
+import { deductStockForOrder } from "@/features/stock/services/stockDeduction";
+import { canAddProductToOrder, validateOrderStock } from "@/features/stock/utils/stockValidation";
 import { apiFetch } from "@/lib/api";
 import {
   createOfflineStore,
@@ -153,6 +155,24 @@ export async function addTableItemApi(
   tableId: number,
   productId: string,
 ): Promise<TableWithDetails> {
+  const table = findTable(tableId);
+  if (!table) {
+    throw new Error("Mesa não encontrada.");
+  }
+
+  const products = getProductsForEnrichment();
+  const product = products.find((entry) => entry.id === productId);
+  if (!product) {
+    throw new Error("Produto não encontrado.");
+  }
+
+  const currentQty =
+    table.items.find((item) => item.productId === productId)?.quantity ?? 0;
+  const validation = canAddProductToOrder(product, currentQty, products);
+  if (!validation.ok) {
+    throw new Error(validation.error);
+  }
+
   store.mutate((tables) => sortTables(applyAddItem(tables, tableId, productId)));
   enqueueAndFlush({
     entity: "tables",
@@ -194,6 +214,14 @@ export async function receivePaymentApi(
 ): Promise<{ ok: boolean }> {
   const table = findTable(tableId);
   const products = getProductsForEnrichment();
+
+  if (table && table.items.length > 0) {
+    const stockValidation = validateOrderStock(table.items, products);
+    if (!stockValidation.ok) {
+      throw new Error(stockValidation.error);
+    }
+  }
+
   const mutation = syncQueue.enqueue({
     entity: "tables",
     operation: "payment",
@@ -203,6 +231,12 @@ export async function receivePaymentApi(
 
   if (table && table.items.length > 0) {
     const saleId = buildSaleIdFromMutationId(mutation.id);
+    const stockResult = deductStockForOrder(table.items, saleId, products);
+    if (!stockResult.ok) {
+      syncQueue.dequeue(mutation.id);
+      throw new Error(stockResult.error);
+    }
+
     recordSale(
       buildSaleFromTable(
         table,

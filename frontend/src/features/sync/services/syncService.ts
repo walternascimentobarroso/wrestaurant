@@ -1,3 +1,5 @@
+import { registerChecklistSyncHandlers } from "@/features/checklists/services/checklistSyncHandlers";
+import { hydrateChecklistsIfEmpty } from "@/features/checklists/services/checklistStorage";
 import { registerMenuCatalogSyncHandlers } from "@/features/menu/services/menuSyncHandlers";
 import { registerProductSyncHandlers } from "@/features/menu/services/productSyncHandlers";
 import { hydrateMenuCatalogIfEmpty } from "@/features/menu/services/menuCatalogStorage";
@@ -9,6 +11,8 @@ import { hydratePurchasesIfEmpty } from "@/features/purchases/services/purchaseS
 import { registerSalesSyncHandlers } from "@/features/sales/services/salesSyncHandlers";
 import { hydrateSalesIfEmpty } from "@/features/sales/services/salesStorage";
 import { hydrateSettingsIfEmpty } from "@/features/settings/services/settingsStorage";
+import { registerStockSyncHandlers } from "@/features/stock/services/stockSyncHandlers";
+import { hydrateStockMovementsIfEmpty } from "@/features/stock/services/stockStorage";
 import { registerSupplierSyncHandlers } from "@/features/suppliers/services/supplierSyncHandlers";
 import { hydrateSuppliersIfEmpty } from "@/features/suppliers/services/supplierStorage";
 import { registerTableSyncHandlers } from "@/features/tables/services/tableSyncHandlers";
@@ -54,6 +58,8 @@ function registerSyncHandlers(): void {
   registerPayableSyncHandlers();
   registerSupplierSyncHandlers();
   registerPurchaseSyncHandlers();
+  registerStockSyncHandlers();
+  registerChecklistSyncHandlers();
   registerHandler("settings", handleSettingsMutation);
   handlersRegistered = true;
 }
@@ -69,6 +75,8 @@ export async function hydrateAll(): Promise<void> {
     hydratePayablesIfEmpty(),
     hydrateSuppliersIfEmpty(),
     hydratePurchasesIfEmpty(),
+    hydrateStockMovementsIfEmpty(),
+    hydrateChecklistsIfEmpty(),
   ]);
 }
 
@@ -91,6 +99,8 @@ export async function hydrateFromServer(
       payables: hydratePayablesIfEmpty,
       suppliers: hydrateSuppliersIfEmpty,
       purchases: hydratePurchasesIfEmpty,
+      stock: hydrateStockMovementsIfEmpty,
+      checklists: hydrateChecklistsIfEmpty,
     };
 
     const hydrate = hydrators[entity];

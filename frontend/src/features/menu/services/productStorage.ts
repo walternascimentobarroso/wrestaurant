@@ -160,6 +160,16 @@ export function applyPurchaseToProductCache(
   );
 }
 
+export function applyStockDeltaToProductCache(productId: string, delta: number): void {
+  store.mutate((products) =>
+    products.map((product) =>
+      product.id === productId
+        ? { ...product, stockQuantity: product.stockQuantity + delta }
+        : product,
+    ),
+  );
+}
+
 export function getProductsByCategoryAndSubcategory(
   products: Product[],
   category: string,

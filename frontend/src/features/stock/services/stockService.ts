@@ -1,45 +1,24 @@
-import {
-  getProductsSnapshot,
-} from "@/features/menu/services/productStorage";
-import {
-  expandOrderStockRequirements,
-  formatRecipeSources,
-} from "@/features/recipes/utils/expandRecipe";
+import { getProductsSnapshot } from "@/features/menu/services/productStorage";
+import type { TableOrderItem } from "@/features/tables/types";
 import { isIngredient, tracksOwnStock } from "@/features/recipes/utils/productKind";
-import type { Product, TableOrderItem } from "@/features/tables/types";
+import type { Product } from "@/features/tables/types";
 
 import { adjustStockApi } from "./stockStorage";
+import { deductStockForOrder } from "./stockDeduction";
 import type { StockActionResult, StockMovementType } from "../types";
 import { isLowStock, isOutOfStock } from "../utils/productStock";
+import {
+  canAddProductToOrder,
+  validateOrderStock as validateOrderStockCore,
+} from "../utils/stockValidation";
+
+export { canAddProductToOrder, deductStockForOrder };
 
 export function validateOrderStock(
   items: TableOrderItem[],
   products = getProductsSnapshot(),
 ): StockActionResult {
-  const requirements = expandOrderStockRequirements(
-    items,
-    products,
-  );
-  for (const [productId, requirement] of requirements) {
-    const stockProduct = products.find((product) => product.id === productId);
-    if (!stockProduct) {
-      return { ok: false, error: "Insumo da receita não encontrado no cadastro." };
-    }
-
-    if (!stockProduct.trackStock) {
-      continue;
-    }
-
-    if (stockProduct.stockQuantity < requirement.quantity) {
-      const sourceLabel = formatRecipeSources(requirement.sources);
-      return {
-        ok: false,
-        error: `Estoque insuficiente: ${stockProduct.name}${sourceLabel ? ` — ${sourceLabel}` : ""}.`,
-      };
-    }
-  }
-
-  return { ok: true };
+  return validateOrderStockCore(items, products);
 }
 
 export async function adjustProductStock(

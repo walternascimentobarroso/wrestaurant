@@ -39,6 +39,13 @@ export type MenuCatalogSyncOperation =
 
 export type PayableSyncOperation = "markPaid" | "markPending";
 
+export type StockSyncOperation = "adjust";
+
+export type ChecklistSyncOperation =
+  | "toggleCompletion"
+  | "updateTemplate"
+  | "moveItem";
+
 export type SyncOperation =
   | "create"
   | "update"
@@ -46,7 +53,9 @@ export type SyncOperation =
   | TableSyncOperation
   | SettingsSyncOperation
   | MenuCatalogSyncOperation
-  | PayableSyncOperation;
+  | PayableSyncOperation
+  | StockSyncOperation
+  | ChecklistSyncOperation;
 
 export interface SyncMutation {
   id: string;

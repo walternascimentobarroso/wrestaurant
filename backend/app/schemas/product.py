@@ -46,6 +46,7 @@ class ProductCreate(BaseModel):
     stockUnit: StockUnit = StockUnit.UN
     packageSize: float | None = Field(default=None, gt=0)
     packageUnit: StockUnit | None = None
+    preferredSupplierId: str | None = None
 
 
 class ProductUpdate(BaseModel):
@@ -61,3 +62,4 @@ class ProductUpdate(BaseModel):
     stockUnit: StockUnit | None = None
     packageSize: float | None = Field(default=None, gt=0)
     packageUnit: StockUnit | None = None
+    preferredSupplierId: str | None = None

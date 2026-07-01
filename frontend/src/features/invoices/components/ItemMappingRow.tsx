@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Check, Plus, SkipForward } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -9,48 +9,41 @@ import { useIngredients } from "@/features/menu/hooks/useProducts";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 import { cn } from "@/lib/utils";
 
+import { IngredientSearchSelect } from "./IngredientSearchSelect";
 import type { ItemMappingState } from "../types";
+import { lineTotalWithVat, unitCostWithVat, VAT_RATE_OPTIONS, type VatRate } from "../utils/vatRate";
 import { ProductQuickCreateDialog } from "./ProductQuickCreateDialog";
 
 interface ItemMappingRowProps {
   mapping: ItemMappingState;
+  supplierId: string | null;
+  supplierName: string | null;
   onSelectProduct: (productId: string) => void;
+  onRegisterNewProduct: (productId: string) => void;
   onSkip: () => void;
   onConfirm: () => void;
   onQuantityChange: (quantity: number) => void;
   onUnitCostChange: (unitCost: number) => void;
+  onVatRateChange: (vatRate: VatRate) => void;
 }
 
 export function ItemMappingRow({
   mapping,
+  supplierId,
+  supplierName,
   onSelectProduct,
+  onRegisterNewProduct,
   onSkip,
   onConfirm,
   onQuantityChange,
   onUnitCostChange,
+  onVatRateChange,
 }: ItemMappingRowProps) {
   const { formatCurrency } = useSettings();
   const ingredients = useIngredients();
-  const [searchQuery, setSearchQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
 
   const topSuggestions = mapping.suggestions.slice(0, 5);
-
-  const selectedProduct = useMemo(
-    () => ingredients.find((product) => product.id === mapping.selectedProductId),
-    [ingredients, mapping.selectedProductId],
-  );
-
-  const filteredProducts = useMemo(() => {
-    const normalized = searchQuery.trim().toLowerCase();
-    if (!normalized) {
-      return [];
-    }
-
-    return ingredients
-      .filter((product) => product.name.toLowerCase().includes(normalized))
-      .slice(0, 10);
-  }, [ingredients, searchQuery]);
 
   const status = mapping.action === "skip"
     ? "ignored"
@@ -60,6 +53,10 @@ export function ItemMappingRow({
 
   const canConfirm =
     mapping.action !== "skip" && mapping.selectedProductId !== null && mapping.quantity > 0;
+
+  const unitCostIncVat = unitCostWithVat(mapping.unitCost, mapping.vatRate);
+  const lineTotalIncVat = lineTotalWithVat(mapping.quantity, mapping.unitCost, mapping.vatRate);
+  const lineTotalExVat = mapping.quantity * mapping.unitCost;
 
   return (
     <>
@@ -113,7 +110,32 @@ export function ItemMappingRow({
             className="h-9 w-24 rounded-lg px-2"
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            {formatCurrency(mapping.quantity * mapping.unitCost)}
+            s/ IVA: {formatCurrency(lineTotalExVat)}
+          </p>
+        </td>
+        <td className="px-3 py-3 align-top">
+          <select
+            value={mapping.vatRate}
+            disabled={mapping.action === "skip"}
+            onChange={(event) => {
+              const value = Number.parseInt(event.target.value, 10);
+              if (value === 0 || value === 6 || value === 23) {
+                onVatRateChange(value);
+              }
+            }}
+            className="h-9 w-20 rounded-lg border border-border bg-background px-2 text-sm"
+          >
+            {VAT_RATE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </td>
+        <td className="px-3 py-3 align-top">
+          <p className="font-medium text-foreground">{formatCurrency(unitCostIncVat)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            c/ IVA: {formatCurrency(lineTotalIncVat)}
           </p>
         </td>
         <td className="min-w-56 px-3 py-3 align-top">
@@ -121,49 +143,11 @@ export function ItemMappingRow({
             <span className="text-sm text-muted-foreground">Ignorado</span>
           ) : (
             <div className="space-y-2">
-              <select
-                value={mapping.selectedProductId ?? ""}
-                onChange={(event) => {
-                  const productId = event.target.value;
-                  if (productId) {
-                    onSelectProduct(productId);
-                  }
-                }}
-                className="h-9 w-full rounded-lg border border-border bg-background px-2 text-sm"
-              >
-                <option value="">Selecionar produto…</option>
-                {topSuggestions.length > 0 ? (
-                  <optgroup label="Sugestões">
-                    {topSuggestions.map((suggestion) => (
-                      <option key={suggestion.productId} value={suggestion.productId}>
-                        {suggestion.productName} ({Math.round(suggestion.score)}%)
-                      </option>
-                    ))}
-                  </optgroup>
-                ) : null}
-                {selectedProduct &&
-                !topSuggestions.some((suggestion) => suggestion.productId === selectedProduct.id) &&
-                !filteredProducts.some((product) => product.id === selectedProduct.id) ? (
-                  <optgroup label="Selecionado">
-                    <option value={selectedProduct.id}>{selectedProduct.name}</option>
-                  </optgroup>
-                ) : null}
-                {filteredProducts.length > 0 ? (
-                  <optgroup label="Busca">
-                    {filteredProducts.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                ) : null}
-              </select>
-
-              <Input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Buscar insumo…"
-                className="h-8 rounded-lg px-2 text-xs"
+              <IngredientSearchSelect
+                ingredients={ingredients}
+                suggestions={topSuggestions}
+                value={mapping.selectedProductId}
+                onChange={onSelectProduct}
               />
 
               <Button
@@ -212,9 +196,10 @@ export function ItemMappingRow({
         onOpenChange={setCreateOpen}
         defaultName={mapping.draftItem.description}
         packType={mapping.packType}
+        supplierId={supplierId}
+        supplierName={supplierName}
         onCreated={(productId) => {
-          onSelectProduct(productId);
-          onConfirm();
+          onRegisterNewProduct(productId);
         }}
       />
     </>

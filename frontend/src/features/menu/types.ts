@@ -9,4 +9,6 @@ export interface MenuCategory {
   subcategories: MenuSubcategory[];
 }
 
-export type MenuCatalogActionResult = { ok: true } | { ok: false; error: string };
+export type MenuCatalogActionResult =
+  | { ok: true; productId?: string }
+  | { ok: false; error: string };

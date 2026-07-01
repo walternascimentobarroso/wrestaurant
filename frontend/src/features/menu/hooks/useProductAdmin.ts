@@ -35,6 +35,7 @@ export interface ProductInput {
   usesPackage: boolean;
   packageSize?: number;
   packageUnit?: StockUnit;
+  preferredSupplierId?: string | null;
 }
 
 function normalizeName(value: string): string {
@@ -184,6 +185,7 @@ function buildApiPayload(input: ProductInput, products: Product[]) {
     stockUnit: fields.stockUnit ?? "un",
     packageSize: fields.packageSize,
     packageUnit: fields.packageUnit,
+    preferredSupplierId: input.preferredSupplierId ?? null,
   };
 }
 
@@ -229,8 +231,8 @@ export function useProductAdmin() {
       }
 
       try {
-        await createProductApi(buildApiPayload(input, products));
-        return { ok: true };
+        const product = await createProductApi(buildApiPayload(input, products));
+        return { ok: true, productId: product.id };
       } catch (error) {
         return {
           ok: false,

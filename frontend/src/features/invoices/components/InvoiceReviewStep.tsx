@@ -10,6 +10,7 @@ import { useSuppliers } from "@/features/suppliers/hooks/useSuppliers";
 import { cn } from "@/lib/utils";
 
 import type { InvoiceDraft, ItemMappingState } from "../types";
+import { lineTotalWithVat, unitCostWithVat } from "../utils/vatRate";
 
 interface InvoiceReviewStepProps {
   draft: InvoiceDraft;
@@ -53,12 +54,16 @@ export function InvoiceReviewStep({
   );
   const skippedItems = itemMappings.filter((mapping) => mapping.action === "skip");
 
-  const itemsTotal = confirmedItems.reduce(
+  const itemsTotalExVat = confirmedItems.reduce(
     (sum, mapping) => sum + mapping.quantity * mapping.unitCost,
     0,
   );
+  const itemsTotalIncVat = confirmedItems.reduce(
+    (sum, mapping) => sum + lineTotalWithVat(mapping.quantity, mapping.unitCost, mapping.vatRate),
+    0,
+  );
   const invoiceTotal = draft.totals.totalIncVat;
-  const totalDifference = Math.abs(itemsTotal - invoiceTotal);
+  const totalDifference = Math.abs(itemsTotalIncVat - invoiceTotal);
   const hasTotalMismatch = totalDifference > 1;
   const canConfirm = confirmedItems.length > 0 && !isConfirming;
 
@@ -89,8 +94,13 @@ export function InvoiceReviewStep({
       <div className="rounded-2xl border border-border bg-card p-4 shadow-elevated">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-sm text-muted-foreground">Soma dos itens confirmados</p>
-            <p className="mt-1 text-2xl font-bold text-foreground">{formatCurrency(itemsTotal)}</p>
+            <p className="text-sm text-muted-foreground">Soma dos itens confirmados (c/ IVA)</p>
+            <p className="mt-1 text-2xl font-bold text-foreground">
+              {formatCurrency(itemsTotalIncVat)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              s/ IVA: {formatCurrency(itemsTotalExVat)}
+            </p>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Total da fatura (c/ IVA)</p>
@@ -125,10 +135,11 @@ export function InvoiceReviewStep({
                 </div>
                 <div className="text-right">
                   <p className="font-medium text-foreground">
-                    {mapping.quantity} × {formatCurrency(mapping.unitCost)}
+                    {mapping.quantity} × {formatCurrency(unitCostWithVat(mapping.unitCost, mapping.vatRate))}
                   </p>
                   <p className="text-muted-foreground">
-                    {formatCurrency(mapping.quantity * mapping.unitCost)}
+                    {formatCurrency(lineTotalWithVat(mapping.quantity, mapping.unitCost, mapping.vatRate))}{" "}
+                    · IVA {mapping.vatRate}%
                   </p>
                 </div>
               </li>

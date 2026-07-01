@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_admin, get_db_session
 from app.models.product import Product, RecipeLine
+from app.models.supplier import Supplier
 from app.models.table import TableOrderItem
 from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 from app.services.mappers import product_to_read
@@ -77,6 +78,14 @@ def create_product(
         package_size=body.packageSize,
         package_unit=body.packageUnit,
     )
+    if body.preferredSupplierId:
+        supplier = db.get(Supplier, body.preferredSupplierId)
+        if not supplier:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Fornecedor preferencial não encontrado.",
+            )
+        product.preferred_supplier_id = body.preferredSupplierId
     _apply_recipe(product, body.recipe)
     db.add(product)
     db.commit()
@@ -117,6 +126,15 @@ def update_product(
         product.package_size = body.packageSize
     if body.packageUnit is not None:
         product.package_unit = body.packageUnit
+    if body.preferredSupplierId is not None:
+        if body.preferredSupplierId:
+            supplier = db.get(Supplier, body.preferredSupplierId)
+            if not supplier:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Fornecedor preferencial não encontrado.",
+                )
+        product.preferred_supplier_id = body.preferredSupplierId or None
     if body.recipe is not None:
         _apply_recipe(product, body.recipe)
 

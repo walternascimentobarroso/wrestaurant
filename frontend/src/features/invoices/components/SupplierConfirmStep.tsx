@@ -18,6 +18,7 @@ import { getSuppliersSnapshot } from "@/features/suppliers/services/supplierStor
 import type { Supplier, SupplierInput } from "@/features/suppliers/types";
 import { cn } from "@/lib/utils";
 
+import { SupplierSearchSelect } from "./SupplierSearchSelect";
 import type { InvoiceDraft, SupplierSuggestion } from "../types";
 
 interface SupplierConfirmStepProps {
@@ -183,37 +184,17 @@ export function SupplierConfirmStep({
         </div>
       ) : (
         <div className="space-y-3">
-          <label htmlFor="supplier-picker" className="text-sm font-medium">
-            Selecionar fornecedor
-          </label>
-          <select
-            id="supplier-picker"
-            value={effectiveSelectedId ?? ""}
-            onChange={(event) => {
-              setSelectedSupplierId(event.target.value || null);
+          <label className="text-sm font-medium">Selecionar fornecedor</label>
+          <SupplierSearchSelect
+            suppliers={suppliers}
+            suggestions={suggestions}
+            value={effectiveSelectedId}
+            onChange={(supplierId) => {
+              setSelectedSupplierId(supplierId);
               setConfirmError("");
             }}
-            className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
-          >
-            <option value="">Selecione…</option>
-            {suggestions.length > 0 ? (
-              <optgroup label="Sugestões">
-                {suggestions.map((suggestion) => (
-                  <option key={suggestion.supplierId} value={suggestion.supplierId}>
-                    {suggestion.supplierName} (score {Math.round(suggestion.score)})
-                  </option>
-                ))}
-              </optgroup>
-            ) : null}
-            <optgroup label="Todos os fornecedores">
-              {suppliers.map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                  {supplier.taxId ? ` — NIF ${supplier.taxId}` : ""}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+            disabled={isConfirming || isLoading}
+          />
 
           <Button
             type="button"
@@ -228,26 +209,17 @@ export function SupplierConfirmStep({
 
       {(showSupplierPicker || (effectiveSelectedId && effectiveSelectedId !== topSuggestion?.supplierId)) ? (
         <div className="space-y-3 rounded-2xl border border-border bg-muted/20 p-4">
-          <label htmlFor="supplier-alt-picker" className="text-sm font-medium">
-            Escolher outro fornecedor
-          </label>
-          <select
-            id="supplier-alt-picker"
-            value={effectiveSelectedId ?? ""}
-            onChange={(event) => {
-              setSelectedSupplierId(event.target.value || null);
+          <label className="text-sm font-medium">Escolher outro fornecedor</label>
+          <SupplierSearchSelect
+            suppliers={suppliers}
+            suggestions={suggestions}
+            value={effectiveSelectedId}
+            onChange={(supplierId) => {
+              setSelectedSupplierId(supplierId);
               setConfirmError("");
             }}
-            className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
-          >
-            <option value="">Selecione…</option>
-            {suppliers.map((supplier) => (
-              <option key={supplier.id} value={supplier.id}>
-                {supplier.name}
-                {supplier.taxId ? ` — NIF ${supplier.taxId}` : ""}
-              </option>
-            ))}
-          </select>
+            disabled={isConfirming || isLoading}
+          />
 
           {selectedSupplier ? (
             <SupplierPreview supplier={selectedSupplier} suggestion={selectedSuggestion} />

@@ -17,6 +17,7 @@ export type ProductCreateInput = {
   stockUnit?: Product["stockUnit"];
   packageSize?: number;
   packageUnit?: Product["stockUnit"];
+  preferredSupplierId?: string | null;
 };
 
 export type ProductUpdateInput = Partial<ProductCreateInput>;
@@ -53,6 +54,7 @@ function buildProductFromInput(
     stockUnit: body.stockUnit ?? "un",
     packageSize: body.packageSize,
     packageUnit: body.packageUnit,
+    preferredSupplierId: body.preferredSupplierId,
   };
 }
 
@@ -87,6 +89,7 @@ export function applyUpdateProduct(
       stockUnit: body.stockUnit ?? product.stockUnit,
       packageSize: body.packageSize ?? product.packageSize,
       packageUnit: body.packageUnit ?? product.packageUnit,
+      preferredSupplierId: body.preferredSupplierId ?? product.preferredSupplierId,
     };
 
     if (body.recipe !== undefined) {

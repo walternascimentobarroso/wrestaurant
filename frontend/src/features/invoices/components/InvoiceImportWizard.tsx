@@ -28,10 +28,12 @@ export function InvoiceImportWizard() {
     uploadAndParse,
     confirmSupplier,
     selectProduct,
+    registerNewProduct,
     skipItem,
     confirmItem,
     updateItemQuantity,
     updateItemUnitCost,
+    updateItemVatRate,
     confirmAllHighConfidence,
     getProgress,
     goToStep,
@@ -150,11 +152,14 @@ export function InvoiceImportWizard() {
           <ItemMappingStep
             itemMappings={state.itemMappings}
             progress={progress}
+            confirmedSupplierId={state.confirmedSupplierId}
             onSelectProduct={selectProduct}
+            onRegisterNewProduct={registerNewProduct}
             onSkip={skipItem}
             onConfirm={confirmItem}
             onQuantityChange={updateItemQuantity}
             onUnitCostChange={updateItemUnitCost}
+            onVatRateChange={updateItemVatRate}
             onConfirmAllHighConfidence={() => confirmAllHighConfidence(90)}
             onContinue={() => goToStep("review")}
           />

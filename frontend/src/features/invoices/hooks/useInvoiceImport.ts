@@ -19,6 +19,7 @@ import type {
   ItemMappingState,
   ItemMappingSuggestion,
 } from "../types";
+import { resolveVatRateFromCode } from "../utils/vatRate";
 
 const SESSION_STORAGE_KEY = "invoice-import-wizard-draft";
 
@@ -78,9 +79,17 @@ function mapItemMappings(suggestions: ItemMappingSuggestion[]): ItemMappingState
     action: "map",
     quantity: mapping.quantity,
     unitCost: mapping.unitCost,
+    vatRate: resolveVatRateFromCode(mapping.draftItem.vatCode),
     packType: mapping.packType,
     confirmed: false,
   }));
+}
+
+function normalizeItemMapping(mapping: ItemMappingState): ItemMappingState {
+  return {
+    ...mapping,
+    vatRate: mapping.vatRate ?? resolveVatRateFromCode(mapping.draftItem.vatCode),
+  };
 }
 
 function invoiceImportReducer(
@@ -89,7 +98,10 @@ function invoiceImportReducer(
 ): InvoiceImportWizardState {
   switch (action.type) {
     case "RESTORE":
-      return action.state;
+      return {
+        ...action.state,
+        itemMappings: action.state.itemMappings.map(normalizeItemMapping),
+      };
     case "SET_LOADING_SUGGESTIONS":
       return state;
     case "PARSE_SUCCESS":
@@ -248,6 +260,18 @@ export function useInvoiceImport() {
     });
   }, []);
 
+  const registerNewProduct = useCallback((lineNumber: number, productId: string) => {
+    dispatch({
+      type: "UPDATE_ITEM_MAPPING",
+      lineNumber,
+      patch: {
+        selectedProductId: productId,
+        action: "create_new",
+        confirmed: true,
+      },
+    });
+  }, []);
+
   const skipItem = useCallback((lineNumber: number) => {
     dispatch({
       type: "UPDATE_ITEM_MAPPING",
@@ -284,6 +308,14 @@ export function useInvoiceImport() {
       type: "UPDATE_ITEM_MAPPING",
       lineNumber,
       patch: { unitCost, confirmed: false },
+    });
+  }, []);
+
+  const updateItemVatRate = useCallback((lineNumber: number, vatRate: 0 | 6 | 23) => {
+    dispatch({
+      type: "UPDATE_ITEM_MAPPING",
+      lineNumber,
+      patch: { vatRate, confirmed: false },
     });
   }, []);
 
@@ -407,10 +439,12 @@ export function useInvoiceImport() {
     uploadAndParse,
     confirmSupplier,
     selectProduct,
+    registerNewProduct,
     skipItem,
     confirmItem,
     updateItemQuantity,
     updateItemUnitCost,
+    updateItemVatRate,
     confirmAllHighConfidence,
     getProgress,
     goToStep,

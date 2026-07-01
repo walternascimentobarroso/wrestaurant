@@ -75,6 +75,7 @@ export interface ItemMappingState {
   action: "map" | "create_new" | "skip";
   quantity: number;
   unitCost: number;
+  vatRate: 0 | 6 | 23;
   packType: string;
   confirmed: boolean;
 }

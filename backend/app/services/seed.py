@@ -40,14 +40,24 @@ PAYABLE_CATEGORIES = [
 ]
 
 SEED_SUPPLIERS = [
-    ("supplier-edp", "EDP Comercial", "Linha de apoio", "clientes@edp.pt", "808 505 505", "Energia elétrica"),
-    ("supplier-agua", "Águas do Litoral", "Atendimento", "faturacao@aguaslitoral.pt", "800 200 300", None),
-    ("supplier-contabilista", "Silva & Associados", "Dr. Ricardo Silva", "ricardo@silvaassociados.pt", "+351 912 345 678", "Contabilidade e impostos"),
-    ("supplier-imobiliaria", "Imobiliária Centro", "Ana Ferreira", "ana@imobcentro.pt", "+351 213 456 789", "Aluguel do espaço"),
-    ("supplier-nos", "NOS Comunicações", None, "empresas@nos.pt", "1699", "Internet e telefone"),
-    ("supplier-galp", "Galp Gás Natural", None, None, "808 280 280", None),
-    ("supplier-mercado", "Mercado Local", None, None, None, "Compras de bebidas e mercearia"),
-    ("supplier-socorama", "Socorama", None, None, None, "Distribuidor de bebidas"),
+    ("supplier-arcol", "Arcol", None, "arcol@arcol.pt", "253 539 012", "Supermercado. Código: 530452"),
+    (
+        "supplier-centro-gravacao",
+        "Centro de Gravacao",
+        None,
+        "guimaraes@centrogravacao.com",
+        "937 296 635",
+        "Carimbo. Largo republica do brasil, 327 4810-446",
+    ),
+    ("supplier-mercadona", "Mercadona", None, None, None, "Supermercado"),
+    (
+        "supplier-karisma",
+        "Karisma",
+        None,
+        "geral@karisma.pt",
+        "938 730 385",
+        "Centro de Impressão. Galerias Av. D. joao IV loja n 2 4810-534",
+    ),
 ]
 
 OPENING_GENERAL_ITEMS = [

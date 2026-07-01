@@ -4,7 +4,7 @@ import { useCallback, useEffect, useReducer, useState } from "react";
 
 import { ApiError } from "@/lib/api";
 import { replaceProductsFromServer } from "@/features/menu/services/productStorage";
-import type { Product } from "@/features/menu/types";
+import type { Product } from "@/features/tables/types";
 import { replacePurchasesFromServer } from "@/features/purchases/services/purchaseStorage";
 import type { PurchaseRecord } from "@/features/purchases/types";
 import { hydrateFromServer } from "@/features/sync";

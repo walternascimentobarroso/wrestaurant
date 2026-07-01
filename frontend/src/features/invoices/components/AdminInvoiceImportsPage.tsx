@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronRight, FileText, Plus } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 import { getInvoiceImport, listInvoiceImports } from "@/features/invoices/services/invoiceService";
 import type { InvoiceImportDetail, InvoiceImportSummary } from "@/features/invoices/types";
+import { cn } from "@/lib/utils";
 
 function formatDate(isoDate: string | null): string {
   if (!isoDate) {
@@ -104,12 +105,13 @@ export function AdminInvoiceImportsPage() {
               Histórico de importações confirmadas
             </p>
           </div>
-          <Button asChild className="rounded-xl">
-            <Link href="/admin/notas-fiscais/importar">
-              <Plus className="size-4" />
-              Importar fatura
-            </Link>
-          </Button>
+          <Link
+            href="/admin/notas-fiscais/importar"
+            className={cn(buttonVariants(), "rounded-xl")}
+          >
+            <Plus className="size-4" />
+            Importar fatura
+          </Link>
         </div>
       </header>
 
@@ -155,9 +157,12 @@ export function AdminInvoiceImportsPage() {
           <div className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border px-6 py-10">
             <FileText className="size-10 text-muted-foreground/50" />
             <p className="text-muted-foreground">Nenhuma importação confirmada ainda.</p>
-            <Button asChild variant="outline" className="rounded-xl">
-              <Link href="/admin/notas-fiscais/importar">Importar primeira fatura</Link>
-            </Button>
+            <Link
+              href="/admin/notas-fiscais/importar"
+              className={cn(buttonVariants({ variant: "outline" }), "rounded-xl")}
+            >
+              Importar primeira fatura
+            </Link>
           </div>
         ) : null}
 

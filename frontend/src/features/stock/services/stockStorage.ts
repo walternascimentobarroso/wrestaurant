@@ -71,7 +71,8 @@ export const isStockMovementsLoaded = store.isLoaded;
 
 export { filterMovementsByProduct };
 
-export function persistStockMovements(_movements: StockMovement[]): void {
+export function persistStockMovements(movements: StockMovement[]): void {
+  void movements;
   // Local cache is updated via mutate on writes; no-op for compatibility.
 }
 

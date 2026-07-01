@@ -37,6 +37,9 @@ export function useSuppliers() {
       try {
         await createSupplierApi({
           name: input.name.trim(),
+          taxId: input.taxId?.trim() || undefined,
+          tradeName: input.tradeName?.trim() || undefined,
+          legalName: input.legalName?.trim() || undefined,
           contactName: input.contactName?.trim() || undefined,
           email: input.email?.trim() || undefined,
           phone: input.phone?.trim() || undefined,
@@ -67,6 +70,9 @@ export function useSuppliers() {
       try {
         await updateSupplierApi(id, {
           name: input.name.trim(),
+          taxId: input.taxId?.trim() || undefined,
+          tradeName: input.tradeName?.trim() || undefined,
+          legalName: input.legalName?.trim() || undefined,
           contactName: input.contactName?.trim() || undefined,
           email: input.email?.trim() || undefined,
           phone: input.phone?.trim() || undefined,

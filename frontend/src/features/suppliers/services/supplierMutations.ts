@@ -9,6 +9,9 @@ export function applyCreateSupplier(
   const supplier: Supplier = {
     id,
     name: input.name.trim(),
+    taxId: input.taxId?.trim() || undefined,
+    tradeName: input.tradeName?.trim() || undefined,
+    legalName: input.legalName?.trim() || undefined,
     contactName: input.contactName?.trim() || undefined,
     email: input.email?.trim() || undefined,
     phone: input.phone?.trim() || undefined,
@@ -30,6 +33,9 @@ export function applyUpdateSupplier(
         ? {
             ...supplier,
             name: input.name.trim(),
+            taxId: input.taxId?.trim() || undefined,
+            tradeName: input.tradeName?.trim() || undefined,
+            legalName: input.legalName?.trim() || undefined,
             contactName: input.contactName?.trim() || undefined,
             email: input.email?.trim() || undefined,
             phone: input.phone?.trim() || undefined,

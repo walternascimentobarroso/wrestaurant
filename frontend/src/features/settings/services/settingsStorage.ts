@@ -53,7 +53,8 @@ export const subscribeSettings = store.subscribe;
 export const getSettingsSnapshot = store.getSnapshot;
 export const getSettingsServerSnapshot = store.getServerSnapshot;
 
-export function persistSettings(_settings: AppSettings): void {
+export function persistSettings(settings: AppSettings): void {
+  void settings;
   // Local state is updated via mutate; no-op for compatibility.
 }
 

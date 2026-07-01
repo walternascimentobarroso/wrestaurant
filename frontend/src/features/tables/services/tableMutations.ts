@@ -7,8 +7,12 @@ function countTableItems(items: TableOrderItem[]): number {
 }
 
 export function toStoredTable(table: Table | TableWithDetails): Table {
-  const { total: _total, itemCount: _itemCount, ...stored } = table as TableWithDetails;
-  return stored;
+  if ("total" in table) {
+    const { id, number, category, status, items, openedAt } = table;
+    return { id, number, category, status, items, openedAt };
+  }
+
+  return table;
 }
 
 function hasPendingTableMutations(tableId: number): boolean {

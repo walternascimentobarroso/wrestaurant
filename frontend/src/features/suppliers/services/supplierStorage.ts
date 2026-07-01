@@ -81,7 +81,8 @@ export const getSuppliersSnapshot = store.getSnapshot;
 export const getSuppliersServerSnapshot = store.getServerSnapshot;
 export const isSuppliersLoaded = store.isLoaded;
 
-export function persistSuppliers(_suppliers: Supplier[]): void {
+export function persistSuppliers(suppliers: Supplier[]): void {
+  void suppliers;
   // Local cache is updated via mutate on writes; no-op for compatibility.
 }
 

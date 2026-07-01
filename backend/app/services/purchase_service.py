@@ -1,13 +1,12 @@
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.models.product import Product
 from app.models.purchase import PurchaseRecord
 from app.models.supplier import Supplier
 from app.schemas.purchase import PurchaseCreate
-from app.services.mappers import utc_now
 from app.services.stock_service import create_movement
 
 
@@ -18,7 +17,7 @@ def record_purchase(db: Session, input_data: PurchaseCreate) -> PurchaseRecord:
             detail="Informe uma quantidade válida maior que zero.",
         )
 
-    if input_data.unit_cost < 0:
+    if input_data.unitCost < 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Informe um preço de compra válido.",

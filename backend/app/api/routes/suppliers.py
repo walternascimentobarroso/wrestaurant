@@ -5,12 +5,39 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_admin, get_db_session
 from app.models.payable import Payable
-from app.models.purchase import PurchaseRecord
 from app.models.supplier import Supplier
 from app.schemas.supplier import SupplierCreate, SupplierRead, SupplierUpdate
 from app.services.mappers import supplier_to_read, utc_now
+from app.services.text_normalization import normalize_tax_id
 
 router = APIRouter(prefix="/suppliers", tags=["suppliers"])
+
+
+def _resolve_tax_id(raw: str | None) -> str | None:
+    if raw is None:
+        return None
+    normalized = normalize_tax_id(raw)
+    return normalized or None
+
+
+def _assert_tax_id_available(
+    db: Session,
+    tax_id: str | None,
+    *,
+    exclude_supplier_id: str | None = None,
+) -> None:
+    if not tax_id:
+        return
+
+    query = db.query(Supplier).filter(Supplier.tax_id == tax_id)
+    if exclude_supplier_id is not None:
+        query = query.filter(Supplier.id != exclude_supplier_id)
+
+    if query.first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Já existe um fornecedor com este NIF/CNPJ.",
+        )
 
 
 @router.get("", response_model=list[SupplierRead])
@@ -30,9 +57,15 @@ def create_supplier(
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Já existe um fornecedor com este nome.")
 
+    tax_id = _resolve_tax_id(body.taxId)
+    _assert_tax_id_available(db, tax_id)
+
     supplier = Supplier(
         id=f"supplier-{uuid.uuid4()}",
         name=name,
+        tax_id=tax_id,
+        trade_name=body.tradeName,
+        legal_name=body.legalName,
         contact_name=body.contactName,
         email=str(body.email) if body.email else None,
         phone=body.phone,
@@ -69,6 +102,14 @@ def update_supplier(
 
     if body.contactName is not None:
         supplier.contact_name = body.contactName
+    if body.taxId is not None:
+        tax_id = _resolve_tax_id(body.taxId)
+        _assert_tax_id_available(db, tax_id, exclude_supplier_id=supplier_id)
+        supplier.tax_id = tax_id
+    if body.tradeName is not None:
+        supplier.trade_name = body.tradeName
+    if body.legalName is not None:
+        supplier.legal_name = body.legalName
     if body.email is not None:
         supplier.email = str(body.email) if body.email else None
     if body.phone is not None:

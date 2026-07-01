@@ -13,6 +13,7 @@ _UPDATED_AT_COLUMNS: list[tuple[str, str | None]] = [
     ("suppliers", "created_at"),
     ("purchase_records", "purchased_at"),
     ("stock_movements", "created_at"),
+    ("invoice_imports", "confirmed_at"),
     ("checklist_templates", None),
     ("checklist_items", None),
     ("checklist_completions", "completed_at"),
@@ -45,5 +46,41 @@ def migrate_updated_at_columns() -> None:
                     text(
                         f"UPDATE {table} "
                         f"SET updated_at = COALESCE({fallback_column}, NOW())",
+                    ),
+                )
+
+
+def migrate_invoice_import_foundation() -> None:
+    """Add supplier tax fields and ensure invoice-import tables exist on legacy DBs."""
+    inspector = inspect(engine)
+    table_names = set(inspector.get_table_names())
+
+    with engine.begin() as conn:
+        if "suppliers" in table_names:
+            columns = {column["name"] for column in inspector.get_columns("suppliers")}
+            if "tax_id" not in columns:
+                conn.execute(text("ALTER TABLE suppliers ADD COLUMN tax_id VARCHAR(32)"))
+            if "trade_name" not in columns:
+                conn.execute(text("ALTER TABLE suppliers ADD COLUMN trade_name VARCHAR(255)"))
+            if "legal_name" not in columns:
+                conn.execute(text("ALTER TABLE suppliers ADD COLUMN legal_name VARCHAR(255)"))
+
+            conn.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ix_suppliers_tax_id "
+                    "ON suppliers (tax_id) WHERE tax_id IS NOT NULL",
+                ),
+            )
+
+        if "invoice_imports" in table_names:
+            columns = {column["name"] for column in inspector.get_columns("invoice_imports")}
+            if "purchase_ids" not in columns:
+                conn.execute(text("ALTER TABLE invoice_imports ADD COLUMN purchase_ids JSON"))
+            if "payable_id" not in columns:
+                conn.execute(
+                    text(
+                        "ALTER TABLE invoice_imports "
+                        "ADD COLUMN payable_id VARCHAR(64) "
+                        "REFERENCES payables(id) ON DELETE SET NULL",
                     ),
                 )

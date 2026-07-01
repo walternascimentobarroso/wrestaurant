@@ -83,7 +83,8 @@ export const getPayablesSnapshot = store.getSnapshot;
 export const getPayablesServerSnapshot = store.getServerSnapshot;
 export const isPayablesLoaded = store.isLoaded;
 
-export function persistPayables(_payables: Payable[]): void {
+export function persistPayables(payables: Payable[]): void {
+  void payables;
   // Local cache is updated via mutate on writes; no-op for compatibility.
 }
 

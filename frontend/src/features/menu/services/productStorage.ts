@@ -234,7 +234,8 @@ export async function refreshProducts(): Promise<Product[]> {
   return products;
 }
 
-export function persistProducts(_products: Product[]): void {
+export function persistProducts(products: Product[]): void {
+  void products;
   // Local cache is updated via mutate on writes; no-op for compatibility.
 }
 

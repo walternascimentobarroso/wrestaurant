@@ -8,6 +8,7 @@ from app.api.routes import (
     checklists,
     health,
     home,
+    invoices,
     menu,
     payables,
     products,
@@ -55,5 +56,6 @@ app.include_router(purchases.router, prefix="/api")
 app.include_router(suppliers.router, prefix="/api")
 app.include_router(payables.router, prefix="/api")
 app.include_router(checklists.router, prefix="/api")
+app.include_router(invoices.router, prefix="/api")
 app.include_router(sync.router, prefix="/api")
 

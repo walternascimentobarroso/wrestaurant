@@ -86,7 +86,8 @@ export const getPurchasesSnapshot = store.getSnapshot;
 export const getPurchasesServerSnapshot = store.getServerSnapshot;
 export const isPurchasesLoaded = store.isLoaded;
 
-export function persistPurchases(_records: PurchaseRecord[]): void {
+export function persistPurchases(records: PurchaseRecord[]): void {
+  void records;
   // Local cache is updated via mutate on writes; no-op for compatibility.
 }
 

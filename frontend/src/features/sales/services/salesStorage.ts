@@ -50,7 +50,8 @@ export const getSalesSnapshot = store.getSnapshot;
 export const getSalesServerSnapshot = store.getServerSnapshot;
 export const isSalesLoaded = store.isLoaded;
 
-export function persistSales(_sales: Sale[]): void {
+export function persistSales(sales: Sale[]): void {
+  void sales;
   // Local cache is updated via mutate on writes; no-op for compatibility.
 }
 

@@ -1,6 +1,7 @@
 from datetime import UTC, date, datetime
 
 from app.models.checklist import ChecklistCompletion, ChecklistItem, ChecklistTemplate
+from app.models.invoice_import import InvoiceImport
 from app.models.menu import MenuCategory, MenuSubcategory
 from app.models.payable import Payable
 from app.models.product import Product, RecipeLine
@@ -15,6 +16,7 @@ from app.schemas.checklist import (
     ChecklistItemRead,
     ChecklistTemplateRead,
 )
+from app.schemas.invoice import InvoiceImportDetailRead, InvoiceImportRead
 from app.schemas.menu import MenuCategoryRead, MenuSubcategoryRead
 from app.schemas.payable import PayableRead
 from app.schemas.product import ProductRead, RecipeLineRead
@@ -76,6 +78,9 @@ def supplier_to_read(supplier: Supplier) -> SupplierRead:
     return SupplierRead(
         id=supplier.id,
         name=supplier.name,
+        taxId=supplier.tax_id,
+        tradeName=supplier.trade_name,
+        legalName=supplier.legal_name,
         contactName=supplier.contact_name,
         email=supplier.email,
         phone=supplier.phone,
@@ -162,6 +167,39 @@ def purchase_to_read(record: PurchaseRecord) -> PurchaseRecordRead:
         purchasedAt=record.purchased_at,
         notes=record.notes,
         stockMovementId=record.stock_movement_id,
+    )
+
+
+def invoice_import_to_read(
+    invoice_import: InvoiceImport,
+    supplier_name: str | None = None,
+) -> InvoiceImportRead:
+    return InvoiceImportRead(
+        id=invoice_import.id,
+        template=invoice_import.template,
+        documentId=invoice_import.document_id,
+        invoiceNumber=invoice_import.invoice_number,
+        supplierId=invoice_import.supplier_id,
+        supplierName=supplier_name,
+        issueDate=invoice_import.issue_date,
+        totalIncVat=invoice_import.total_inc_vat,
+        currency=invoice_import.currency,
+        status=invoice_import.status,
+        itemCount=invoice_import.item_count,
+        confirmedAt=invoice_import.confirmed_at,
+    )
+
+
+def invoice_import_to_detail_read(
+    invoice_import: InvoiceImport,
+    supplier_name: str | None = None,
+) -> InvoiceImportDetailRead:
+    base = invoice_import_to_read(invoice_import, supplier_name)
+    return InvoiceImportDetailRead(
+        **base.model_dump(),
+        purchaseIds=invoice_import.purchase_ids or [],
+        payableId=invoice_import.payable_id,
+        subtotalExVat=invoice_import.subtotal_ex_vat,
     )
 
 

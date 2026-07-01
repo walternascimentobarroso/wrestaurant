@@ -117,7 +117,8 @@ export async function refreshMenuCatalog(): Promise<MenuCategory[]> {
   return categories;
 }
 
-export function persistMenuCatalog(_categories: MenuCategory[]): void {
+export function persistMenuCatalog(categories: MenuCategory[]): void {
+  void categories;
   // Local cache is updated on writes; no-op for compatibility.
 }
 

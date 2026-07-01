@@ -152,7 +152,8 @@ export function loadTables(): Table[] {
   return getTablesSnapshot();
 }
 
-export function persistTables(_tables: Table[]): void {
+export function persistTables(tables: Table[]): void {
+  void tables;
   // Local state is updated via mutate; no-op for compatibility.
 }
 

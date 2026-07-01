@@ -1,0 +1,341 @@
+{
+  "template": "makro_pt",
+  "documentId": "J6FSWPBP-023508",
+  "invoiceNumber": "FAC 08004202601/023508",
+  "issueDate": "2026-06-28T13:15:00",
+  "supplier": {
+    "legalName": "MAKRO CASH & CARRY PORTUGAL, S.A.",
+    "storeName": "MAKRO BRAGA",
+    "taxId": "502030712"
+  },
+  "totals": {
+    "subtotalExVat": 131.83,
+    "totalIncVat": 153.69,
+    "currency": "EUR"
+  },
+  "items": [
+    {
+      "lineNumber": 1,
+      "externalCode": "5054563288622",
+      "description": "DENT.C.DIARIO 75M PARODONTAX",
+      "packType": "PC",
+      "unitPrice": 3.37,
+      "quantity": 1,
+      "totalPrice": 3.37,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 2,
+      "externalCode": "8414892329323",
+      "description": "MC PAO BURG BRIOCHE MANT. 330G",
+      "packType": "PC",
+      "unitPrice": 1.7,
+      "quantity": 1,
+      "totalPrice": 1.7,
+      "vatCode": "4"
+    },
+    {
+      "lineNumber": 3,
+      "externalCode": "5603722493942",
+      "description": "#MANT C/S COV 250GR PRIMOR",
+      "packType": "CA",
+      "unitPrice": 1.94,
+      "quantity": 1,
+      "totalPrice": 1.94,
+      "vatCode": "4"
+    },
+    {
+      "lineNumber": 4,
+      "externalCode": "5601660998406",
+      "description": "RIOBA LEITE UHT INTEIRO 1LT*6",
+      "packType": "PC",
+      "unitPrice": 5.28,
+      "quantity": 1,
+      "totalPrice": 5.28,
+      "vatCode": "4"
+    },
+    {
+      "lineNumber": 5,
+      "externalCode": "5601660913058",
+      "description": "MC MASSA FOLHADA RETANG 230G",
+      "packType": "PC",
+      "unitPrice": 0.71,
+      "quantity": 3,
+      "totalPrice": 2.13,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 6,
+      "externalCode": "4337182259510",
+      "description": "MC MANGA CUBOS 1KG",
+      "packType": "PC",
+      "unitPrice": 5.19,
+      "quantity": 1,
+      "totalPrice": 5.19,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 7,
+      "externalCode": "5601660996945",
+      "description": "MC MIX FRUTOS TROPICAIS 1KG",
+      "packType": "PC",
+      "unitPrice": 4.69,
+      "quantity": 1,
+      "totalPrice": 4.69,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 8,
+      "externalCode": "5601660910651",
+      "description": "MC PAO BEIRA C/CHOURIÇO 105GR",
+      "packType": "PC",
+      "unitPrice": 2.19,
+      "quantity": 1,
+      "totalPrice": 2.19,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 9,
+      "externalCode": "8436021259240",
+      "description": "SUSPICOLINOS PRES. 18 UNID.",
+      "packType": "PC",
+      "unitPrice": 4.39,
+      "quantity": 1,
+      "totalPrice": 4.39,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 10,
+      "externalCode": "5600324499068",
+      "description": "FRIGIDEIRA CARNE 4X150GR",
+      "packType": "PC",
+      "unitPrice": 5.59,
+      "quantity": 1,
+      "totalPrice": 5.59,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 11,
+      "externalCode": "5609990002770",
+      "description": "TIRAS DE BACON MACAL 500G",
+      "packType": "PC",
+      "unitPrice": 3.49,
+      "quantity": 1,
+      "totalPrice": 3.49,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 12,
+      "externalCode": "2862319010891",
+      "description": "ASAS FRANGO CUV FAMILIAR",
+      "packType": "KG",
+      "unitPrice": 3.47,
+      "quantity": 1,
+      "totalPrice": 3.47,
+      "vatCode": "4",
+      "weightKg": 1.089
+    },
+    {
+      "lineNumber": 13,
+      "externalCode": "2850724006004",
+      "description": "MARACUJA ROXO I EMB",
+      "packType": "KG",
+      "unitPrice": 8.09,
+      "quantity": 1,
+      "totalPrice": 8.09,
+      "vatCode": "4",
+      "weightKg": 0.6
+    },
+    {
+      "lineNumber": 14,
+      "externalCode": "5602484000627",
+      "description": "MORANGO I 500G SW",
+      "packType": "SW",
+      "unitPrice": 1.98,
+      "quantity": 1,
+      "totalPrice": 1.98,
+      "vatCode": "4"
+    },
+    {
+      "lineNumber": 15,
+      "externalCode": "8422837163963",
+      "description": "QUIABO I 200G SW",
+      "packType": "SW",
+      "unitPrice": 2.28,
+      "quantity": 1,
+      "totalPrice": 2.28,
+      "vatCode": "4"
+    },
+    {
+      "lineNumber": 16,
+      "externalCode": "2880995019151",
+      "description": "MC PIMENTO TRICOLOR I 80/100MM",
+      "packType": "KG",
+      "unitPrice": 5.25,
+      "quantity": 1,
+      "totalPrice": 5.25,
+      "vatCode": "4",
+      "weightKg": 1.915
+    },
+    {
+      "lineNumber": 17,
+      "externalCode": "5601660997478",
+      "description": "MC ABOBORA PEDACOS 4G 2K",
+      "packType": "BG",
+      "unitPrice": 2.96,
+      "quantity": 1,
+      "totalPrice": 2.96,
+      "vatCode": "4"
+    },
+    {
+      "lineNumber": 18,
+      "externalCode": "5601660993456",
+      "description": "ARO OLEO ALIMENTAR 5L",
+      "packType": "PC",
+      "unitPrice": 7.22,
+      "quantity": 2,
+      "totalPrice": 14.44,
+      "vatCode": "5"
+    },
+    {
+      "lineNumber": 19,
+      "externalCode": "5601660974707",
+      "description": "ARROZ E.L AGULHA 1KG ARO",
+      "packType": "PC",
+      "unitPrice": 0.97,
+      "quantity": 5,
+      "totalPrice": 4.85,
+      "vatCode": "4"
+    },
+    {
+      "lineNumber": 20,
+      "externalCode": "3760381261915",
+      "description": "PURE BATATA MOUSLINE 250G",
+      "packType": "PC",
+      "unitPrice": 1.99,
+      "quantity": 1,
+      "totalPrice": 1.99,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 21,
+      "externalCode": "8414892356244",
+      "description": "MC TOPPING BAUNILHA 1KG",
+      "packType": "PC",
+      "unitPrice": 3.79,
+      "quantity": 1,
+      "totalPrice": 3.79,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 22,
+      "externalCode": "8723400945291",
+      "description": "TRIDENT WHITE 24 SPEARMI.",
+      "packType": "BX",
+      "unitPrice": 11.4,
+      "quantity": 1,
+      "totalPrice": 11.4,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 23,
+      "externalCode": "5601237241126",
+      "description": "V. J.P. T* 37.5CL",
+      "packType": "PC",
+      "unitPrice": 1.55,
+      "quantity": 1,
+      "totalPrice": 1.55,
+      "vatCode": "5"
+    },
+    {
+      "lineNumber": 24,
+      "externalCode": "5601012011302",
+      "description": "V. MATEUS ROSE 37.5CL",
+      "packType": "PC",
+      "unitPrice": 1.87,
+      "quantity": 1,
+      "totalPrice": 1.87,
+      "vatCode": "5"
+    },
+    {
+      "lineNumber": 25,
+      "externalCode": "5601096201101",
+      "description": "V.V.CASAL GARCIA B* 37.5CL",
+      "packType": "PC",
+      "unitPrice": 1.99,
+      "quantity": 1,
+      "totalPrice": 1.99,
+      "vatCode": "5"
+    },
+    {
+      "lineNumber": 26,
+      "externalCode": "7630040408493",
+      "description": "MARTINI ROSSO 1 LT",
+      "packType": "BT",
+      "unitPrice": 7.19,
+      "quantity": 1,
+      "totalPrice": 7.19,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 27,
+      "externalCode": "5011546475165",
+      "description": "NESCAFE CAPUCCINO 10X14G",
+      "packType": "PC",
+      "unitPrice": 2.59,
+      "quantity": 1,
+      "totalPrice": 2.59,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 28,
+      "externalCode": "9002490290948",
+      "description": "RED BULL 6X250ML",
+      "packType": "PC",
+      "unitPrice": 5.94,
+      "quantity": 1,
+      "totalPrice": 5.94,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 29,
+      "externalCode": "5601151958643",
+      "description": "SUMOL LARANJA LATA 6X33CL",
+      "packType": "PC",
+      "unitPrice": 3.12,
+      "quantity": 1,
+      "totalPrice": 3.12,
+      "vatCode": "2"
+    },
+    {
+      "lineNumber": 30,
+      "externalCode": "5601660989909",
+      "description": "RIOBA AGUA MINERAL 5 LT",
+      "packType": "PC",
+      "unitPrice": 0.63,
+      "quantity": 3,
+      "totalPrice": 1.89,
+      "vatCode": "5"
+    },
+    {
+      "lineNumber": 31,
+      "externalCode": "4337182213352",
+      "description": "ARO CARVAO VEGETAL 5KG",
+      "packType": "BX",
+      "unitPrice": 6.44,
+      "quantity": 1,
+      "totalPrice": 6.44,
+      "vatCode": "2"
+    }
+  ],
+  "skippedLines": [
+    { "reason": "tax_line", "raw": "+ 178 TAXA IEC INCL. PREÇO U.V 0,121 * 1 = 0,12" },
+    { "reason": "deposit", "raw": "+ 165626 DEPOSITO 6 X 0.10 EUR PC 0,600 1 0,60 1 0,60 0 V" },
+    { "reason": "tax_line", "raw": "+ 180 IEC BEB AÇUCAR. INCL.PUV 0,348 * 1 = 0,35" },
+    { "reason": "deposit", "raw": "+ 165626 DEPOSITO 6 X 0.10 EUR PC 0,600 1 0,60 1 0,60 0 V" },
+    { "reason": "tax_line", "raw": "+ 185 IEC BEB AÇUCAR. INCL.PUV 0,023 * 1 = 0,02" },
+    { "reason": "discount", "raw": "Campanha Ultrafresh 10% 2,06 4 54481" },
+    { "reason": "discount", "raw": "10% Desconto Carne Aves e Picados 0,35 4 54785" },
+    { "reason": "discount", "raw": "Desconto total 2,41" }
+  ]
+}

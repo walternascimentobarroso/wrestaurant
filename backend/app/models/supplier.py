@@ -12,6 +12,9 @@ class Supplier(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    tax_id: Mapped[str | None] = mapped_column(String(32), unique=True)
+    trade_name: Mapped[str | None] = mapped_column(String(255))
+    legal_name: Mapped[str | None] = mapped_column(String(255))
     contact_name: Mapped[str | None] = mapped_column(String(255))
     email: Mapped[str | None] = mapped_column(String(255))
     phone: Mapped[str | None] = mapped_column(String(64))

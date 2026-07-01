@@ -1,5 +1,9 @@
-const CACHE_NAME = "restaurant-static-v2";
-const PRECACHE_ASSETS = ["/manifest.json"];
+const CACHE_NAME = "restaurant-static-v3";
+const PRECACHE_ASSETS = [
+  "/manifest.json",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

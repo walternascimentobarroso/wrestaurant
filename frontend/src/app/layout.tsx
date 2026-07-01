@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: `${brand} — Mesas`,
   description: `Sistema de gestão de mesas do ${brand}`,
   manifest: "/manifest.json",
+  icons: {
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     title: brand,

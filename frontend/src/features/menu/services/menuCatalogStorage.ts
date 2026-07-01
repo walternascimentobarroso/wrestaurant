@@ -1,4 +1,4 @@
-import type { MenuCategory } from "../types";
+import type { MenuCategory, MenuSubcategory } from "../types";
 import {
   countProductsByCategory,
   countProductsBySubcategory,
@@ -77,7 +77,12 @@ export function replaceTempSubcategoryId(oldId: string, newId: string): void {
 }
 
 export function replaceMenuCatalogFromServer(categories: MenuCategory[]): void {
-  store.replace(categories);
+  store.replace(
+    categories.map((category) => ({
+      ...category,
+      subcategories: dedupeSubcategoriesByName(category.subcategories),
+    })),
+  );
 }
 
 export async function hydrateMenuCatalogIfEmpty(): Promise<void> {
@@ -120,12 +125,34 @@ export function getCategoryNames(categories: MenuCategory[]): string[] {
   return categories.map((category) => category.name);
 }
 
+export function dedupeSubcategoriesByName(
+  subcategories: MenuSubcategory[],
+): MenuSubcategory[] {
+  const byName = new Map<string, MenuSubcategory>();
+
+  for (const subcategory of subcategories) {
+    const key = subcategory.name.toLowerCase().trim();
+    if (!byName.has(key)) {
+      byName.set(key, subcategory);
+    }
+  }
+
+  return Array.from(byName.values());
+}
+
+export function getSubcategories(
+  categories: MenuCategory[],
+  categoryName: string,
+): MenuSubcategory[] {
+  const category = categories.find((entry) => entry.name === categoryName);
+  return dedupeSubcategoriesByName(category?.subcategories ?? []);
+}
+
 export function getSubcategoryNames(
   categories: MenuCategory[],
   categoryName: string,
 ): string[] {
-  const category = categories.find((entry) => entry.name === categoryName);
-  return category?.subcategories.map((subcategory) => subcategory.name) ?? [];
+  return getSubcategories(categories, categoryName).map((subcategory) => subcategory.name);
 }
 
 export function findCategoryById(

@@ -6,7 +6,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useMenuCatalog } from "@/features/menu/hooks/useMenuCatalog";
 import { useProducts, useProductsByCategory } from "@/features/menu/hooks/useProducts";
-import { getSubcategoryNames } from "@/features/menu/services/menuCatalogStorage";
+import {
+  getSubcategories,
+  getSubcategoryNames,
+} from "@/features/menu/services/menuCatalogStorage";
 import { getMenuProductMaxServings } from "@/features/recipes/utils/expandRecipe";
 import { hasRecipe } from "@/features/recipes/utils/productKind";
 import { useSettings } from "@/features/settings/hooks/useSettings";
@@ -35,7 +38,8 @@ export function ProductList({ items, onAdd }: ProductListProps) {
     ? (selectedCategory as string)
     : (categoryNames[0] ?? "");
 
-  const subcategories = getSubcategoryNames(categories, activeCategory);
+  const subcategoryEntries = getSubcategories(categories, activeCategory);
+  const subcategories = subcategoryEntries.map((subcategory) => subcategory.name);
   const activeSubcategory = subcategories.includes(selectedSubcategory ?? "")
     ? (selectedSubcategory as string)
     : (subcategories[0] ?? "");
@@ -150,17 +154,17 @@ export function ProductList({ items, onAdd }: ProductListProps) {
             Nenhuma subcategoria nesta categoria.
           </p>
         ) : (
-          subcategories.map((subcategory) => {
-            const isActive = subcategory === activeSubcategory;
-            const subcategoryCount = countBySubcategory(subcategory);
+          subcategoryEntries.map((subcategory) => {
+            const isActive = subcategory.name === activeSubcategory;
+            const subcategoryCount = countBySubcategory(subcategory.name);
 
             return (
               <Button
-                key={subcategory}
+                key={subcategory.id}
                 type="button"
                 role="tab"
                 aria-selected={isActive}
-                onClick={() => handleSubcategoryChange(subcategory)}
+                onClick={() => handleSubcategoryChange(subcategory.name)}
                 variant={isActive ? "default" : "outline"}
                 className={cn(
                   "h-11 shrink-0 rounded-xl px-4 text-sm font-semibold transition",
@@ -169,7 +173,7 @@ export function ProductList({ items, onAdd }: ProductListProps) {
                     : "bg-card shadow-pressed hover:-translate-y-px hover:shadow-elevated",
                 )}
               >
-                {subcategory}
+                {subcategory.name}
                 {subcategoryCount > 0 && (
                   <span
                     className={cn(

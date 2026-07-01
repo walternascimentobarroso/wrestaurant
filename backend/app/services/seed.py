@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine
+from app.data.menu_catalog import seed_products
 from app.models import (
     AppSettings,
     ChecklistCompletion,
@@ -26,34 +27,7 @@ TABLE_CATEGORY_CONFIG = [
     (TableCategory.OUTDOOR, 4),
 ]
 
-FAKE_PRODUCTS = [
-    ("p1", "Bruschetta", 24.9, "Entradas", "Frias"),
-    ("p2", "Carpaccio", 38.5, "Entradas", "Frias"),
-    ("p3", "Tábua de queijos", 42.0, "Entradas", "Frias"),
-    ("p4", "Salada Caesar", 32.0, "Entradas", "Saladas"),
-    ("p5", "Salada grega", 29.5, "Entradas", "Saladas"),
-    ("p6", "Croquete de bacalhau", 26.0, "Entradas", "Quentes"),
-    ("p7", "Bolinho de aipim", 22.0, "Entradas", "Quentes"),
-    ("p8", "Picanha na brasa", 89.9, "Pratos", "Carnes"),
-    ("p9", "Filé ao molho madeira", 68.5, "Pratos", "Carnes"),
-    ("p10", "Costela BBQ", 74.0, "Pratos", "Carnes"),
-    ("p11", "Penne ao pesto", 54.0, "Pratos", "Massas"),
-    ("p12", "Risoto de camarão", 72.0, "Pratos", "Massas"),
-    ("p13", "Lasanha bolonhesa", 58.0, "Pratos", "Massas"),
-    ("p14", "Moqueca de peixe", 76.0, "Pratos", "Peixes"),
-    ("p15", "Salmão grelhado", 82.0, "Pratos", "Peixes"),
-    ("p16", "Água mineral", 6.0, "Bebidas", "Sem álcool"),
-    ("p17", "Refrigerante", 8.5, "Bebidas", "Sem álcool"),
-    ("p18", "Suco natural", 12.0, "Bebidas", "Sem álcool"),
-    ("p19", "Cerveja artesanal", 18.0, "Bebidas", "Cervejas"),
-    ("p20", "Chopp", 14.0, "Bebidas", "Cervejas"),
-    ("p21", "Vinho tinto (taça)", 28.0, "Bebidas", "Vinhos"),
-    ("p22", "Vinho branco (taça)", 26.0, "Bebidas", "Vinhos"),
-    ("p23", "Pudim de leite", 18.9, "Sobremesas", "Clássicas"),
-    ("p24", "Mousse de chocolate", 22.0, "Sobremesas", "Clássicas"),
-    ("p25", "Petit gateau", 26.5, "Sobremesas", "Quentes"),
-    ("p26", "Banana flambada", 24.0, "Sobremesas", "Quentes"),
-]
+FAKE_PRODUCTS = seed_products()
 
 PAYABLE_CATEGORIES = [
     ("utilities", "Utilidades"),

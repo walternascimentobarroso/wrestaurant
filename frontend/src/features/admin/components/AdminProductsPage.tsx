@@ -16,7 +16,10 @@ import { Input } from "@/components/ui/input";
 import { useMenuCatalog } from "@/features/menu/hooks/useMenuCatalog";
 import { useIngredients } from "@/features/menu/hooks/useProducts";
 import { useProductAdmin } from "@/features/menu/hooks/useProductAdmin";
-import { getSubcategoryNames } from "@/features/menu/services/menuCatalogStorage";
+import {
+  getSubcategories,
+  getSubcategoryNames,
+} from "@/features/menu/services/menuCatalogStorage";
 import { PurchaseHistoryDialog } from "@/features/purchases/components/PurchaseHistoryDialog";
 import { usePurchases } from "@/features/purchases/hooks/usePurchases";
 import {
@@ -99,7 +102,7 @@ export function AdminProductsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleteError, setDeleteError] = useState("");
 
-  const subcategoryOptions = getSubcategoryNames(categories, form.category);
+  const subcategoryOptions = getSubcategories(categories, form.category);
 
   const ingredientStockLabel = getStockUnitLabelForValues(
     form.stockUnit,
@@ -1067,8 +1070,8 @@ export function AdminProductsPage() {
                   )}
                 >
                   {subcategoryOptions.map((subcategory) => (
-                    <option key={subcategory} value={subcategory}>
-                      {subcategory}
+                    <option key={subcategory.id} value={subcategory.name}>
+                      {subcategory.name}
                     </option>
                   ))}
                 </select>

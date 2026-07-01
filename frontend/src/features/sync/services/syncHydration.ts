@@ -7,7 +7,10 @@ import type {
 import { replaceChecklistStoreFromServer } from "@/features/checklists/services/checklistStorage";
 import { replaceChecklistsFromServer } from "@/features/checklists/services/checklistMutations";
 import type { MenuCategory } from "@/features/menu/types";
-import { replaceMenuCatalogFromServer } from "@/features/menu/services/menuCatalogStorage";
+import {
+  dedupeSubcategoriesByName,
+  replaceMenuCatalogFromServer,
+} from "@/features/menu/services/menuCatalogStorage";
 import { replaceProductsFromServer } from "@/features/menu/services/productStorage";
 import type { Payable } from "@/features/payables/types";
 import { replacePayablesFromServer } from "@/features/payables/services/payableStorage";
@@ -101,7 +104,7 @@ function mergeMenuCatalog(
 
     map.set(category.id, {
       ...category,
-      subcategories: Array.from(subMap.values()),
+      subcategories: dedupeSubcategoriesByName(Array.from(subMap.values())),
     });
   }
 

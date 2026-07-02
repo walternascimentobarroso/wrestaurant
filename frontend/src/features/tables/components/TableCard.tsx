@@ -19,14 +19,19 @@ export function TableCard({ table }: TableCardProps) {
   return (
     <Link
       href={`/mesas/${table.id}`}
-      className="group block rounded-2xl border border-border bg-card p-6 shadow-elevated transition hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:shadow-pressed"
+      className={cn(
+        "group flex aspect-[5/4] min-w-[8rem] flex-[1_1_8rem] flex-col rounded-2xl border p-3 shadow-elevated transition hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:shadow-pressed sm:aspect-[4/3] sm:min-w-[9rem] sm:flex-[1_1_9rem] sm:p-4 lg:min-w-[10rem] lg:flex-[1_1_10rem] lg:p-5",
+        isOccupied
+          ? "border-primary/50 bg-primary/15 ring-2 ring-primary/25"
+          : "border-border bg-card",
+      )}
     >
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             {categoryLabel}
           </p>
-          <p className="mt-1 font-heading text-3xl font-bold text-foreground">
+          <p className="mt-1 font-heading text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
             {table.number}
           </p>
         </div>
@@ -42,7 +47,7 @@ export function TableCard({ table }: TableCardProps) {
         </span>
       </div>
 
-      <div className="mt-6 space-y-1 text-sm text-muted-foreground">
+      <div className="mt-auto space-y-1 pt-4 text-sm text-muted-foreground">
         {isOccupied ? (
           <>
             <p>

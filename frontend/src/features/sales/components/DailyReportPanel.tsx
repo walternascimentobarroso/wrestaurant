@@ -18,20 +18,30 @@ interface DailyReportPanelProps {
   sales: Sale[];
   showTabs?: boolean;
   showSummary?: boolean;
+  layout?: "default" | "page";
 }
 
 export function DailyReportPanel({
   sales,
   showTabs = true,
   showSummary = true,
+  layout = "default",
 }: DailyReportPanelProps) {
   const { formatCurrency } = useSettings();
   const [view, setView] = useState<"list" | "chart">("list");
   const total = sales.reduce((sum, sale) => sum + sale.total, 0);
 
+  const isPageLayout = layout === "page";
+
   return (
     <div className="space-y-4">
-      {showTabs ? <DailyReportTabs view={view} onViewChange={setView} /> : null}
+      {showTabs ? (
+        <DailyReportTabs
+          view={view}
+          onViewChange={setView}
+          className={isPageLayout ? "mt-0" : undefined}
+        />
+      ) : null}
 
       {view === "list" ? (
         sales.length === 0 ? (
@@ -75,7 +85,7 @@ export function DailyReportPanel({
           </ul>
         )
       ) : (
-        <DailySalesChart sales={sales} />
+        <DailySalesChart sales={sales} size={isPageLayout ? "full" : "compact"} />
       )}
 
       {showSummary ? (

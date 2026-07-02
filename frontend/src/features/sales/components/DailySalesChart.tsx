@@ -10,17 +10,19 @@ import {
 
 interface DailySalesChartProps {
   sales: Sale[];
+  size?: "compact" | "full";
 }
 
 function formatHourLabel(hour: number): string {
   return `${hour.toString().padStart(2, "0")}h`;
 }
 
-export function DailySalesChart({ sales }: DailySalesChartProps) {
+export function DailySalesChart({ sales, size = "compact" }: DailySalesChartProps) {
   const { formatCurrency } = useSettings();
   const buckets = aggregateSalesByHour(sales);
   const peak = findPeakHour(buckets);
   const maxTotal = Math.max(...buckets.map((bucket) => bucket.total), 1);
+  const isFullSize = size === "full";
 
   if (sales.length === 0) {
     return (
@@ -51,7 +53,13 @@ export function DailySalesChart({ sales }: DailySalesChartProps) {
           Movimento por horário (entrada)
         </p>
 
-        <div className="flex h-44 items-end gap-1.5 sm:gap-2">
+        <div
+          className={
+            isFullSize
+              ? "flex h-56 items-end gap-1.5 sm:h-64 sm:gap-2"
+              : "flex h-44 items-end gap-1.5 sm:gap-2"
+          }
+        >
           {buckets.map((bucket) => {
             const heightPercent = (bucket.total / maxTotal) * 100;
             const isPeak = peak?.hour === bucket.hour && bucket.total > 0;
@@ -61,7 +69,11 @@ export function DailySalesChart({ sales }: DailySalesChartProps) {
                 key={bucket.hour}
                 className="group/bar flex min-w-0 flex-1 flex-col items-center gap-2"
               >
-                <div className="relative flex h-32 w-full items-end justify-center">
+                <div
+                  className={`relative flex w-full items-end justify-center ${
+                    isFullSize ? "h-44 sm:h-52" : "h-32"
+                  }`}
+                >
                   <div
                     role="presentation"
                     className="pointer-events-none absolute bottom-[calc(100%-0.25rem)] left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-foreground px-2.5 py-1.5 text-xs font-semibold text-background opacity-0 shadow-elevated transition-opacity group-hover/bar:opacity-100 group-focus-within/bar:opacity-100"

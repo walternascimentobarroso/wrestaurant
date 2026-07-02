@@ -30,11 +30,11 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${fraunces.variable} ${manrope.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${manrope.variable} h-full w-full antialiased`}
       suppressHydrationWarning
     >
       <body
-        className="flex min-h-full flex-col font-sans"
+        className="flex min-h-full w-full flex-col font-sans"
         suppressHydrationWarning
       >
         <ThemeProvider

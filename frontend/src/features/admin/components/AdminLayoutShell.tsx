@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   Building2,
   ClipboardList,
@@ -14,12 +15,14 @@ import {
   LayoutGrid,
   ListChecks,
   LogOut,
+  Menu,
   Package,
   Receipt,
   Warehouse,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SyncStatusBadge } from "@/features/sync/components/SyncStatusBadge";
 import { brand } from "@/design-system";
@@ -50,6 +53,91 @@ const ADMIN_NAV_ITEMS = [
   { href: "/admin/relatorios", label: "Relatórios", icon: ClipboardList },
 ] as const;
 
+function getAdminPageTitle(pathname: string): string {
+  const match = [...ADMIN_NAV_ITEMS]
+    .sort((left, right) => right.href.length - left.href.length)
+    .find(({ href, ...item }) =>
+      "exact" in item && item.exact
+        ? pathname === href
+        : pathname === href || pathname.startsWith(`${href}/`),
+    );
+
+  return match?.label ?? "Administração";
+}
+
+interface AdminSidebarPanelProps {
+  onNavigate?: () => void;
+}
+
+function AdminSidebarPanel({ onNavigate }: AdminSidebarPanelProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAdminAuth();
+
+  function handleLogout() {
+    logout();
+    router.push("/");
+  }
+
+  return (
+    <>
+      <div className="border-b border-border px-4 py-4">
+        <p className="font-heading text-xs font-semibold uppercase tracking-wide text-foreground">
+          {brand}
+        </p>
+        <h1 className="font-heading text-lg font-bold text-foreground">
+          Administração
+        </h1>
+      </div>
+
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        {ADMIN_NAV_ITEMS.map(({ href, label, icon: Icon, ...item }) => {
+          const isActive =
+            "exact" in item && item.exact
+              ? pathname === href
+              : pathname === href || pathname.startsWith(`${href}/`);
+
+          return (
+            <Link
+              key={href}
+              href={href}
+              onClick={onNavigate}
+              className={cn(
+                "flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary/15 font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <Icon className="size-4" />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="space-y-2 border-t border-border p-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full justify-start rounded-xl"
+          onClick={handleLogout}
+        >
+          <LogOut className="size-4" />
+          Sair
+        </Button>
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className="block rounded-xl px-3 py-2 text-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          Voltar ao salão
+        </Link>
+      </div>
+    </>
+  );
+}
+
 interface AdminLayoutShellProps {
   children: React.ReactNode;
 }
@@ -57,12 +145,8 @@ interface AdminLayoutShellProps {
 export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, login, logout } = useAdminAuth();
-
-  function handleLogout() {
-    logout();
-    router.push("/");
-  }
+  const { isAuthenticated, login } = useAdminAuth();
+  const [navOpen, setNavOpen] = useState(false);
 
   if (!isAuthenticated) {
     return (
@@ -98,69 +182,45 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
     );
   }
 
+  const pageTitle = getAdminPageTitle(pathname);
+
   return (
-    <div className="flex h-dvh bg-background">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card shadow-elevated">
-        <div className="border-b border-border px-4 py-4">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="font-heading text-xs font-semibold uppercase tracking-wide text-foreground">
-                {brand}
-              </p>
-              <h1 className="font-heading text-lg font-bold text-foreground">Administração</h1>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <SyncStatusBadge />
-              <ThemeToggle />
-            </div>
+    <div className="flex h-dvh flex-col bg-background">
+      <header className="relative z-[60] flex shrink-0 items-center gap-3 border-b border-border bg-card px-4 py-3 shadow-elevated">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="shrink-0 rounded-xl"
+          aria-expanded={navOpen}
+          aria-label={navOpen ? "Fechar menu" : "Abrir menu"}
+          onClick={() => setNavOpen((open) => !open)}
+        >
+          <Menu className="size-4" />
+        </Button>
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-heading text-sm font-semibold text-foreground">
+            {pageTitle}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">{brand}</p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <SyncStatusBadge />
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <Sheet open={navOpen} onOpenChange={setNavOpen}>
+        <SheetContent side="left" className="w-56 max-w-[85vw] p-0" showCloseButton>
+          <div className="flex h-full flex-col">
+            <AdminSidebarPanel onNavigate={() => setNavOpen(false)} />
           </div>
-        </div>
+        </SheetContent>
+      </Sheet>
 
-        <nav className="flex-1 space-y-1 p-3">
-          {ADMIN_NAV_ITEMS.map(({ href, label, icon: Icon, ...item }) => {
-            const isActive =
-              "exact" in item && item.exact
-                ? pathname === href
-                : pathname === href || pathname.startsWith(`${href}/`);
-
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/15 font-semibold text-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Icon className="size-4" />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="space-y-2 border-t border-border p-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full justify-start rounded-xl"
-            onClick={handleLogout}
-          >
-            <LogOut className="size-4" />
-            Sair
-          </Button>
-          <Link
-            href="/"
-            className="block rounded-xl px-3 py-2 text-center text-sm text-muted-foreground hover:text-foreground"
-          >
-            Voltar ao salão
-          </Link>
-        </div>
-      </aside>
-
-      <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+      <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }

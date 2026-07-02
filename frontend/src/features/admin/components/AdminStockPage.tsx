@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Minus, Package, Plus } from "lucide-react";
+import { History, Minus, Package, Pencil, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,10 +13,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { PriceComparisonAlert } from "@/features/purchases/components/PurchaseHistoryDialog";
+import {
+  PriceComparisonAlert,
+  PurchaseHistoryDialog,
+} from "@/features/purchases/components/PurchaseHistoryDialog";
 import { usePurchases } from "@/features/purchases/hooks/usePurchases";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 import { useStock } from "@/features/stock/hooks/useStock";
+import { ProductStockEditDialog } from "@/features/stock/components/ProductStockEditDialog";
 import { formatStockAmount, getPurchaseUnitLabel } from "@/features/stock/utils/stockUnits";
 import type { StockFilter } from "@/features/stock/types";
 import { isLowStock, isOutOfStock } from "@/features/stock/utils/productStock";
@@ -43,7 +47,8 @@ function getTodayDateInput(): string {
 export function AdminStockPage() {
   const { formatCurrency } = useSettings();
   const { suppliers } = useSuppliers();
-  const { recordProductPurchase, comparePriceForProduct } = usePurchases();
+  const { recordProductPurchase, comparePriceForProduct, getHistoryForProduct, getInsightsForProduct } =
+    usePurchases();
   const { trackedProducts, lowStockCount, outOfStockCount, getFilteredProducts, adjustStock } =
     useStock();
 
@@ -58,6 +63,9 @@ export function AdminStockPage() {
   const [purchasedAt, setPurchasedAt] = useState(getTodayDateInput());
   const [purchaseNotes, setPurchaseNotes] = useState("");
   const [adjustError, setAdjustError] = useState("");
+  const [editTarget, setEditTarget] = useState<Product | null>(null);
+  const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const filteredProducts = useMemo(
     () =>
@@ -123,6 +131,16 @@ export function AdminStockPage() {
     if (mode === "restock" && product.lastPurchaseCost !== null && product.lastPurchaseCost !== undefined) {
       setUnitCost(String(product.lastPurchaseCost));
     }
+  }
+
+  function openPurchaseHistory(product: Product) {
+    setHistoryProduct(product);
+    window.setTimeout(() => setHistoryOpen(true), 0);
+  }
+
+  function closePurchaseHistory() {
+    setHistoryOpen(false);
+    setHistoryProduct(null);
   }
 
   async function handleAdjustSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -282,6 +300,26 @@ export function AdminStockPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon-sm"
+                          className="rounded-lg"
+                          aria-label={`Histórico de compras de ${product.name}`}
+                          onClick={() => openPurchaseHistory(product)}
+                        >
+                          <History className="size-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon-sm"
+                          className="rounded-lg"
+                          aria-label={`Editar ${product.name}`}
+                          onClick={() => setEditTarget(product)}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
                         <Button
                           type="button"
                           variant="outline"
@@ -521,6 +559,30 @@ export function AdminStockPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ProductStockEditDialog
+        open={editTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditTarget(null);
+          }
+        }}
+        product={editTarget}
+      />
+
+      <PurchaseHistoryDialog
+        open={historyOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closePurchaseHistory();
+          }
+        }}
+        title={historyProduct ? `Compras — ${historyProduct.name}` : "Histórico de compras"}
+        description="Compare preços e fornecedores ao longo do tempo."
+        records={historyProduct ? getHistoryForProduct(historyProduct.id) : []}
+        insights={historyProduct ? getInsightsForProduct(historyProduct.id) : null}
+        formatCurrency={formatCurrency}
+      />
     </div>
   );
 }

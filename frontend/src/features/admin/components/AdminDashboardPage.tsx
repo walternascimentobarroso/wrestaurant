@@ -18,7 +18,7 @@ import { DailySalesChart } from "@/features/sales/components/DailySalesChart";
 import { useSales } from "@/features/sales/hooks/useSales";
 import {
   formatReportDateShort,
-  formatSaleTime,
+  formatSaleSessionTime,
 } from "@/features/sales/utils/formatReportDate";
 import { useMenuCatalog } from "@/features/menu/hooks/useMenuCatalog";
 import { useProducts } from "@/features/menu/hooks/useProducts";
@@ -278,7 +278,7 @@ export function AdminDashboardPage() {
                         {formatCurrency(sale.total)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatSaleTime(sale.paidAt)}
+                        {formatSaleSessionTime(sale)}
                       </p>
                     </div>
                   </li>

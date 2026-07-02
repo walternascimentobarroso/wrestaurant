@@ -170,6 +170,7 @@ def receive_payment(
     sale = Sale(
         id=sale_id,
         table_number=table.number,
+        opened_at=table.opened_at,
         paid_at=utc_now(),
         payment_method=body.method,
         amount_received=body.amountReceived,

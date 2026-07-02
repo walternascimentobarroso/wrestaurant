@@ -95,6 +95,9 @@ function createSaleForDay(
   const paidAt = new Date(day);
   paidAt.setHours(hour, minute, 0, 0);
 
+  const stayMinutes = 25 + Math.floor(random() * 70);
+  const openedAt = new Date(paidAt.getTime() - stayMinutes * 60_000);
+
   const amountReceived =
     paymentMethod === "cash" && random() > 0.5
       ? Math.ceil(total / 10) * 10
@@ -103,6 +106,7 @@ function createSaleForDay(
   return {
     id: crypto.randomUUID(),
     tableNumber,
+    openedAt: openedAt.toISOString(),
     paidAt: paidAt.toISOString(),
     paymentMethod,
     amountReceived,

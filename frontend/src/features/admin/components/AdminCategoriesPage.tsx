@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FolderTree, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -44,8 +44,28 @@ export function AdminCategoriesPage() {
   const [formMode, setFormMode] = useState<FormMode | null>(null);
   const [formName, setFormName] = useState("");
   const [formError, setFormError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleteError, setDeleteError] = useState("");
+
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const filteredCategories = useMemo(
+    () =>
+      categories.filter((category) => {
+        if (!normalizedSearchQuery) {
+          return true;
+        }
+
+        if (category.name.toLowerCase().includes(normalizedSearchQuery)) {
+          return true;
+        }
+
+        return category.subcategories.some((subcategory) =>
+          subcategory.name.toLowerCase().includes(normalizedSearchQuery),
+        );
+      }),
+    [categories, normalizedSearchQuery],
+  );
 
   function openCategoryCreate() {
     setFormMode({ type: "category-create" });
@@ -192,14 +212,34 @@ export function AdminCategoriesPage() {
       </header>
 
       <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
-        {categories.length === 0 ? (
+        <Input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Buscar categoria ou subcategoria"
+          className="h-10 max-w-md rounded-xl px-3"
+        />
+
+        {filteredCategories.length === 0 ? (
           <div className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-border px-6 py-10">
             <p className="text-center text-muted-foreground">
-              Nenhuma categoria cadastrada. Crie a primeira categoria do cardápio.
+              {categories.length === 0
+                ? "Nenhuma categoria cadastrada. Crie a primeira categoria do cardápio."
+                : "Nenhuma categoria encontrada para a busca."}
             </p>
           </div>
         ) : (
-          categories.map((category) => (
+          filteredCategories.map((category) => {
+            const isCategoryMatch = category.name
+              .toLowerCase()
+              .includes(normalizedSearchQuery);
+            const visibleSubcategories =
+              normalizedSearchQuery && !isCategoryMatch
+                ? category.subcategories.filter((subcategory) =>
+                    subcategory.name.toLowerCase().includes(normalizedSearchQuery),
+                  )
+                : category.subcategories;
+
+            return (
             <section
               key={category.id}
               className="overflow-hidden rounded-3xl border border-border bg-card shadow-elevated"
@@ -214,8 +254,8 @@ export function AdminCategoriesPage() {
                       {category.name}
                     </h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {category.subcategories.length}{" "}
-                      {category.subcategories.length === 1
+                      {visibleSubcategories.length}{" "}
+                      {visibleSubcategories.length === 1
                         ? "subcategoria"
                         : "subcategorias"}
                     </p>
@@ -268,13 +308,13 @@ export function AdminCategoriesPage() {
                   </Button>
                 </div>
 
-                {category.subcategories.length === 0 ? (
+                {visibleSubcategories.length === 0 ? (
                   <p className="rounded-2xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
                     Nenhuma subcategoria nesta categoria.
                   </p>
                 ) : (
                   <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
-                    {category.subcategories.map((subcategory) => (
+                    {visibleSubcategories.map((subcategory) => (
                       <li
                         key={subcategory.id}
                         className="flex items-center justify-between gap-3 px-4 py-3"
@@ -322,7 +362,8 @@ export function AdminCategoriesPage() {
                 )}
               </div>
             </section>
-          ))
+          );
+          })
         )}
       </div>
 

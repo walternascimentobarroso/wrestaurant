@@ -50,6 +50,20 @@ def migrate_updated_at_columns() -> None:
                 )
 
 
+def migrate_sale_opened_at() -> None:
+    """Persist table session start on sales for peak-hour reporting."""
+    inspector = inspect(engine)
+    if "sales" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("sales")}
+    if "opened_at" in columns:
+        return
+
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE sales ADD COLUMN opened_at TIMESTAMPTZ"))
+
+
 def migrate_invoice_import_foundation() -> None:
     """Add supplier tax fields and ensure invoice-import tables exist on legacy DBs."""
     inspector = inspect(engine)

@@ -36,7 +36,7 @@ export function DailySalesChart({ sales }: DailySalesChartProps) {
     <div className="space-y-4">
       {peak && peak.total > 0 && (
         <div className="rounded-2xl bg-primary/10 px-4 py-3 text-center">
-          <p className="text-sm text-muted-foreground">Horário de maior venda</p>
+          <p className="text-sm text-muted-foreground">Horário de pico (entrada)</p>
           <p className="font-heading text-xl font-bold text-primary">
             {formatHourLabel(peak.hour)} · {formatCurrency(peak.total)}
           </p>
@@ -48,7 +48,7 @@ export function DailySalesChart({ sales }: DailySalesChartProps) {
 
       <div className="rounded-2xl border border-border bg-card p-4 shadow-pressed">
         <p className="mb-4 text-sm font-semibold text-foreground">
-          Vendas por horário
+          Movimento por horário (entrada)
         </p>
 
         <div className="flex h-44 items-end gap-1.5 sm:gap-2">

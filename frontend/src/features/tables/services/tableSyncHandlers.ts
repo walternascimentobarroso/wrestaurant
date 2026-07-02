@@ -47,13 +47,28 @@ async function handleTableMutation(mutation: SyncMutation): Promise<void> {
       return;
     }
     case "payment": {
+      const payload = mutation.payload as {
+        method: string;
+        amountReceived: number;
+        change: number;
+        expectedSaleId?: string;
+      };
       const response = await apiFetch<{ ok: boolean; saleId?: string }>(
         `/tables/${tableId}/payment`,
         {
           method: "POST",
-          body: JSON.stringify(mutation.payload),
+          body: JSON.stringify({
+            method: payload.method,
+            amountReceived: payload.amountReceived,
+            change: payload.change,
+          }),
         },
       );
+      if (payload.expectedSaleId && !response.saleId) {
+        throw new Error(
+          "Pagamento sincronizado sem venda no servidor. Tentando novamente.",
+        );
+      }
       if (response.saleId) {
         linkSaleToPaymentMutation(mutation.id, response.saleId);
       }

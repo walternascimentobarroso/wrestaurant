@@ -144,6 +144,7 @@ def sale_to_read(sale: Sale) -> SaleRead:
     return SaleRead(
         id=sale.id,
         tableNumber=sale.table_number,
+        openedAt=sale.opened_at,
         paidAt=sale.paid_at,
         paymentMethod=sale.payment_method,
         amountReceived=sale.amount_received,

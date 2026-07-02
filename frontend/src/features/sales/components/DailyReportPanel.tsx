@@ -7,7 +7,7 @@ import { useSettings } from "@/features/settings/hooks/useSettings";
 import { DailyReportTabs } from "./DailyReportTabs";
 import { DailySalesChart } from "./DailySalesChart";
 import type { Sale } from "../types";
-import { formatSaleTime } from "../utils/formatReportDate";
+import { formatSaleSessionTime, formatSessionDurationMinutes } from "../utils/formatReportDate";
 
 const PAYMENT_LABELS = {
   cash: "Dinheiro",
@@ -42,7 +42,12 @@ export function DailyReportPanel({
           </div>
         ) : (
           <ul className="space-y-3">
-            {sales.map((sale) => (
+            {sales.map((sale) => {
+              const duration =
+                sale.openedAt &&
+                formatSessionDurationMinutes(sale.openedAt, sale.paidAt);
+
+              return (
               <li
                 key={sale.id}
                 className="rounded-2xl border border-border bg-card p-4 shadow-pressed"
@@ -50,10 +55,11 @@ export function DailyReportPanel({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-heading text-lg font-bold text-foreground">
-                      {formatSaleTime(sale.paidAt)}
+                      {formatSaleSessionTime(sale)}
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       Mesa {sale.tableNumber} · {PAYMENT_LABELS[sale.paymentMethod]}
+                      {duration ? ` · ${duration}` : ""}
                     </p>
                   </div>
                   <p className="shrink-0 font-heading text-lg font-bold text-primary">
@@ -64,7 +70,8 @@ export function DailyReportPanel({
                   {sale.description}
                 </p>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )
       ) : (

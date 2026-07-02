@@ -5,6 +5,43 @@ export function formatSaleTime(isoDate: string): string {
   });
 }
 
+export function getSaleSessionStart(sale: { openedAt?: string; paidAt: string }): string {
+  return sale.openedAt ?? sale.paidAt;
+}
+
+export function formatSaleSessionTime(sale: {
+  openedAt?: string;
+  paidAt: string;
+}): string {
+  const startAt = getSaleSessionStart(sale);
+  if (!sale.openedAt || sale.openedAt === sale.paidAt) {
+    return formatSaleTime(sale.paidAt);
+  }
+
+  return `${formatSaleTime(startAt)}–${formatSaleTime(sale.paidAt)}`;
+}
+
+export function formatSessionDurationMinutes(
+  startAt: string,
+  endAt: string,
+): string | null {
+  const durationMinutes = Math.round(
+    (new Date(endAt).getTime() - new Date(startAt).getTime()) / 60_000,
+  );
+
+  if (durationMinutes <= 0) {
+    return null;
+  }
+
+  if (durationMinutes < 60) {
+    return `${durationMinutes} min`;
+  }
+
+  const hours = Math.floor(durationMinutes / 60);
+  const minutes = durationMinutes % 60;
+  return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
+}
+
 export function formatReportDate(date: Date): string {
   return date.toLocaleDateString("pt-PT", {
     weekday: "long",

@@ -19,7 +19,11 @@ from app.models import (
     Supplier,
 )
 from app.models.enums import CurrencyCode, TableCategory, TableStatus
-from app.services.migrations import migrate_invoice_import_foundation, migrate_updated_at_columns
+from app.services.migrations import (
+    migrate_invoice_import_foundation,
+    migrate_sale_opened_at,
+    migrate_updated_at_columns,
+)
 
 TABLE_CATEGORY_CONFIG = [
     (TableCategory.COUNTER, 4),
@@ -198,4 +202,5 @@ def seed_database(db: Session) -> None:
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     migrate_invoice_import_foundation()
+    migrate_sale_opened_at()
     migrate_updated_at_columns()

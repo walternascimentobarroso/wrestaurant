@@ -16,6 +16,7 @@ class SaleItemRead(BaseModel):
 class SaleRead(BaseModel):
     id: str
     tableNumber: int
+    openedAt: datetime | None = None
     paidAt: datetime
     paymentMethod: PaymentMethod
     amountReceived: float

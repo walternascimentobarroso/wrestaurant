@@ -234,6 +234,7 @@ export async function receivePaymentApi(
 ): Promise<{ ok: boolean }> {
   const table = findTable(tableId);
   const products = getProductsForEnrichment();
+  let expectedSaleId: string | undefined;
 
   if (table && table.items.length > 0) {
     const stockValidation = validateOrderStock(table.items, products);
@@ -251,6 +252,7 @@ export async function receivePaymentApi(
 
   if (table && table.items.length > 0) {
     const saleId = buildSaleIdFromMutationId(mutation.id);
+    expectedSaleId = saleId;
     const stockResult = deductStockForOrder(table.items, saleId, products);
     if (!stockResult.ok) {
       syncQueue.dequeue(mutation.id);
@@ -269,6 +271,13 @@ export async function receivePaymentApi(
         saleId,
       ),
     );
+  }
+
+  if (expectedSaleId) {
+    syncQueue.updateMutationPayload(mutation.id, {
+      ...payment,
+      expectedSaleId,
+    });
   }
 
   store.mutate((tables) => sortTables(applyPayment(tables, tableId)));

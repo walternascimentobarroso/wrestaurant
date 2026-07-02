@@ -53,6 +53,7 @@ export function ReceivePaymentDialog({
     formatAmountForInput(total),
   );
   const [confirmError, setConfirmError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const received = parseAmountInput(amountReceived);
   const change = method === "cash" ? Math.max(0, received - total) : 0;
@@ -63,11 +64,15 @@ export function ReceivePaymentDialog({
       setMethod(null);
       setAmountReceived(formatAmountForInput(total));
       setConfirmError("");
+      setIsSubmitting(false);
     }
     onOpenChange(nextOpen);
   }
 
   function handleMethodSelect(nextMethod: PaymentMethod) {
+    if (isSubmitting) {
+      return;
+    }
     setMethod(nextMethod);
     if (nextMethod === "card") {
       setAmountReceived(formatAmountForInput(total));
@@ -75,10 +80,11 @@ export function ReceivePaymentDialog({
   }
 
   async function handleConfirm() {
-    if (!method || isInsufficientCash) {
+    if (!method || isInsufficientCash || isSubmitting) {
       return;
     }
 
+    setIsSubmitting(true);
     const result = await onConfirm({
       method,
       amountReceived: received,
@@ -87,12 +93,14 @@ export function ReceivePaymentDialog({
 
     if (!result.ok) {
       setConfirmError(result.error ?? "Não foi possível confirmar o pagamento.");
+      setIsSubmitting(false);
       return;
     }
 
     setMethod(null);
     setAmountReceived(formatAmountForInput(total));
     setConfirmError("");
+    setIsSubmitting(false);
     onOpenChange(false);
   }
 
@@ -128,6 +136,7 @@ export function ReceivePaymentDialog({
             inputMode="decimal"
             value={amountReceived}
             readOnly={method === "card"}
+            disabled={isSubmitting}
             onChange={(event) => setAmountReceived(event.target.value)}
             className="h-14 rounded-2xl px-4 text-xl font-semibold shadow-pressed"
           />
@@ -168,6 +177,7 @@ export function ReceivePaymentDialog({
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => handleMethodSelect("cash")}
               className={cn(
                 "flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border-2 p-4 transition hover:-translate-y-0.5 active:translate-y-px",
@@ -183,6 +193,7 @@ export function ReceivePaymentDialog({
             </button>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => handleMethodSelect("card")}
               className={cn(
                 "flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border-2 p-4 transition hover:-translate-y-0.5 active:translate-y-px",
@@ -207,11 +218,11 @@ export function ReceivePaymentDialog({
 
         <Button
           type="button"
-          disabled={!method || isInsufficientCash}
+          disabled={!method || isInsufficientCash || isSubmitting}
           onClick={handleConfirm}
           className="h-14 w-full rounded-2xl text-base font-semibold shadow-elevated hover:shadow-elevated-lg"
         >
-          Confirmar recebimento
+          {isSubmitting ? "Sincronizando pagamento..." : "Confirmar recebimento"}
         </Button>
       </DialogContent>
     </Dialog>

@@ -92,6 +92,7 @@ export function AdminProductsPage() {
   const categoryNames = categories.map((category) => category.name);
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -112,18 +113,35 @@ export function AdminProductsPage() {
 
   const filteredProducts = useMemo(() => {
     const sorted = [...products].sort((a, b) => a.name.localeCompare(b.name, "pt-PT"));
+    const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
     const byKind =
       kindFilter === "all"
         ? sorted
         : sorted.filter((product) => product.kind === kindFilter);
 
-    if (filterCategory === "all") {
-      return byKind;
+    const byCategory =
+      filterCategory === "all"
+        ? byKind
+        : byKind.filter((product) => product.category === filterCategory);
+
+    if (!normalizedSearchQuery) {
+      return byCategory;
     }
 
-    return byKind.filter((product) => product.category === filterCategory);
-  }, [products, kindFilter, filterCategory]);
+    return byCategory.filter((product) => {
+      const searchableText = [
+        product.name,
+        product.category,
+        product.subcategory,
+        product.kind,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(normalizedSearchQuery);
+    });
+  }, [products, kindFilter, filterCategory, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const effectivePage = Math.min(currentPage, totalPages);
@@ -436,6 +454,16 @@ export function AdminProductsPage() {
             </Button>
           ))}
         </div>
+
+        <Input
+          value={searchQuery}
+          onChange={(event) => {
+            setSearchQuery(event.target.value);
+            setCurrentPage(1);
+          }}
+          placeholder="Buscar por nome, categoria, subcategoria ou tipo"
+          className="h-10 max-w-md rounded-xl px-3"
+        />
 
         {filteredProducts.length === 0 ? (
           <div className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-border px-6 py-10">

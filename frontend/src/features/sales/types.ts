@@ -11,6 +11,7 @@ export interface SaleItem {
 export interface Sale {
   id: string;
   tableNumber: number;
+  openedAt?: string;
   paidAt: string;
   paymentMethod: PaymentMethod;
   amountReceived: number;

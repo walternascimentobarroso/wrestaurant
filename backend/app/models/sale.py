@@ -12,6 +12,7 @@ class Sale(Base, TimestampMixin):
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     table_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     paid_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     payment_method: Mapped[str] = mapped_column(String(16), nullable=False)
     amount_received: Mapped[float] = mapped_column(Float, nullable=False)

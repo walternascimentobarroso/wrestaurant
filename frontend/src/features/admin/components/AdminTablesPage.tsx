@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 import { useTableAdmin } from "@/features/tables/hooks/useTableAdmin";
@@ -52,8 +53,34 @@ export function AdminTablesPage() {
   const [editingTable, setEditingTable] = useState<TableWithDetails | null>(null);
   const [form, setForm] = useState<TableFormState>(EMPTY_FORM);
   const [formError, setFormError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<TableWithDetails | null>(null);
   const [deleteError, setDeleteError] = useState("");
+
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const tablesByCategory = useMemo(
+    () =>
+      CATEGORY_OPTIONS.reduce<Record<TableCategory, TableWithDetails[]>>(
+        (accumulator, option) => {
+          const categoryTables = tables.filter((table) => table.category === option.value);
+          accumulator[option.value] = categoryTables.filter((table) => {
+            if (!normalizedSearchQuery) {
+              return true;
+            }
+
+            const tableLabel = getTableDisplayName(table).toLowerCase();
+            const tableNumber = String(table.number);
+            return (
+              tableLabel.includes(normalizedSearchQuery) ||
+              tableNumber.includes(normalizedSearchQuery)
+            );
+          });
+          return accumulator;
+        },
+        { counter: [], indoor: [], outdoor: [] },
+      ),
+    [tables, normalizedSearchQuery],
+  );
 
   function openCreateForm(category: TableCategory) {
     setEditingTable(null);
@@ -153,8 +180,15 @@ export function AdminTablesPage() {
       </header>
 
       <div className="flex-1 space-y-8 overflow-y-auto px-6 py-6">
+        <Input
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Buscar por nome ou número da mesa"
+          className="h-10 max-w-md rounded-xl px-3"
+        />
+
         {CATEGORY_OPTIONS.map(({ value: category, label }) => {
-          const categoryTables = tables.filter((table) => table.category === category);
+          const categoryTables = tablesByCategory[category];
 
           return (
             <section key={category}>

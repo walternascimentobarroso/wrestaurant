@@ -21,6 +21,7 @@ export function buildSaleFromTable(
   return {
     id: saleId,
     tableNumber: table.number,
+    openedAt: table.openedAt,
     paidAt,
     paymentMethod: payment.method,
     amountReceived: payment.amountReceived,

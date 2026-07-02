@@ -79,6 +79,7 @@ export function AdminChecklistsPage() {
   const [selectedHistoryDateKey, setSelectedHistoryDateKey] = useState<string | null>(null);
   const [formMode, setFormMode] = useState<FormMode | null>(null);
   const [formLabel, setFormLabel] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [formDays, setFormDays] = useState<DayOfWeek[]>([...ALL_DAYS]);
   const [formActive, setFormActive] = useState(true);
   const [formError, setFormError] = useState("");
@@ -91,6 +92,15 @@ export function AdminChecklistsPage() {
 
   const activeTemplate = getTemplateByType(activeType);
   const activeItems = activeTemplate ? getItemsByTemplate(activeTemplate.id) : [];
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const hasSearchFilter = normalizedSearchQuery.length > 0;
+  const filteredActiveItems = activeItems.filter((item) => {
+    if (!normalizedSearchQuery) {
+      return true;
+    }
+
+    return item.label.toLowerCase().includes(normalizedSearchQuery);
+  });
   const activeTemplateDraft = activeTemplate
     ? (templateDrafts[activeTemplate.id] ?? {
         start: activeTemplate.timeWindowStart,
@@ -251,6 +261,13 @@ export function AdminChecklistsPage() {
               Histórico
             </ToggleGroupItem>
           </ToggleGroup>
+
+          <Input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Buscar item da checklist"
+            className="h-10 max-w-md rounded-xl px-3"
+          />
         </div>
       </header>
 
@@ -320,16 +337,18 @@ export function AdminChecklistsPage() {
             </section>
           ) : null}
 
-          {activeItems.length === 0 ? (
+          {filteredActiveItems.length === 0 ? (
             <div className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-border px-6 py-10">
               <p className="text-center text-muted-foreground">
-                Nenhum item cadastrado para esta checklist.
+                {activeItems.length === 0
+                  ? "Nenhum item cadastrado para esta checklist."
+                  : "Nenhum item encontrado para a busca."}
               </p>
             </div>
           ) : (
             <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-elevated">
               <ul className="divide-y divide-border">
-                {activeItems.map((item, index) => (
+                {filteredActiveItems.map((item, index) => (
                   <li key={item.id} className="flex items-start gap-3 px-5 py-4">
                     <div className="flex flex-col gap-1 pt-1">
                       <Button
@@ -337,7 +356,7 @@ export function AdminChecklistsPage() {
                         variant="outline"
                         size="icon-sm"
                         className="rounded-lg"
-                        disabled={index === 0}
+                        disabled={index === 0 || hasSearchFilter}
                         aria-label="Mover para cima"
                         onClick={() => reorderItem(item.id, "up")}
                       >
@@ -348,7 +367,7 @@ export function AdminChecklistsPage() {
                         variant="outline"
                         size="icon-sm"
                         className="rounded-lg"
-                        disabled={index === activeItems.length - 1}
+                        disabled={index === filteredActiveItems.length - 1 || hasSearchFilter}
                         aria-label="Mover para baixo"
                         onClick={() => reorderItem(item.id, "down")}
                       >

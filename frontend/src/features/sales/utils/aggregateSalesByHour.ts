@@ -1,4 +1,5 @@
 import type { Sale } from "../types";
+import { getSaleSessionStart } from "./formatReportDate";
 
 export interface HourlySalesBucket {
   hour: number;
@@ -13,7 +14,7 @@ export function aggregateSalesByHour(sales: Sale[]): HourlySalesBucket[] {
 
   const buckets = new Map<number, HourlySalesBucket>();
   for (const sale of sales) {
-    const hour = new Date(sale.paidAt).getHours();
+    const hour = new Date(getSaleSessionStart(sale)).getHours();
     const existing = buckets.get(hour) ?? { hour, total: 0, count: 0 };
     buckets.set(hour, {
       hour,

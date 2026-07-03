@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
 import { AppHeaderActions } from "@/components/app-header-actions";
 import { buttonVariants } from "@/components/ui/button";
 import { brand } from "@/design-system";
+import { pullSyncDelta } from "@/features/sync";
 import { cn } from "@/lib/utils";
 
 import { DailyReportPanel } from "./DailyReportPanel";
@@ -15,6 +17,10 @@ import { formatReportDate } from "../utils/formatReportDate";
 
 export function DailyReportPage() {
   const { dailySales } = useSales();
+
+  useEffect(() => {
+    void pullSyncDelta();
+  }, []);
 
   return (
     <div className="flex h-dvh flex-col bg-background">

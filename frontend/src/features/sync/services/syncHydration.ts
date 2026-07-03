@@ -4,26 +4,48 @@ import type {
   ChecklistStore,
   ChecklistTemplate,
 } from "@/features/checklists/types";
-import { replaceChecklistStoreFromServer } from "@/features/checklists/services/checklistStorage";
+import {
+  getChecklistsSnapshot,
+  replaceChecklistStoreFromServer,
+} from "@/features/checklists/services/checklistStorage";
 import { replaceChecklistsFromServer } from "@/features/checklists/services/checklistMutations";
 import type { MenuCategory } from "@/features/menu/types";
 import {
   dedupeSubcategoriesByName,
+  getMenuCatalogSnapshot,
   replaceMenuCatalogFromServer,
 } from "@/features/menu/services/menuCatalogStorage";
-import { replaceProductsFromServer } from "@/features/menu/services/productStorage";
+import {
+  getProductsSnapshot,
+  replaceProductsFromServer,
+} from "@/features/menu/services/productStorage";
 import type { Payable } from "@/features/payables/types";
-import { replacePayablesFromServer } from "@/features/payables/services/payableStorage";
+import {
+  getPayablesSnapshot,
+  replacePayablesFromServer,
+} from "@/features/payables/services/payableStorage";
 import type { PurchaseRecord } from "@/features/purchases/types";
-import { replacePurchasesFromServer } from "@/features/purchases/services/purchaseStorage";
+import {
+  getPurchasesSnapshot,
+  replacePurchasesFromServer,
+} from "@/features/purchases/services/purchaseStorage";
 import type { Sale } from "@/features/sales/types";
-import { replaceSalesFromServer } from "@/features/sales/services/salesStorage";
+import {
+  getSalesSnapshot,
+  replaceSalesFromServer,
+} from "@/features/sales/services/salesStorage";
 import { replaceSettingsFromServer } from "@/features/settings/services/settingsStorage";
 import type { AppSettings } from "@/features/settings/types";
 import type { StockMovement } from "@/features/stock/types";
-import { replaceStockMovementsFromServer } from "@/features/stock/services/stockStorage";
+import {
+  getStockMovementsSnapshot,
+  replaceStockMovementsFromServer,
+} from "@/features/stock/services/stockStorage";
 import type { Supplier } from "@/features/suppliers/types";
-import { replaceSuppliersFromServer } from "@/features/suppliers/services/supplierStorage";
+import {
+  getSuppliersSnapshot,
+  replaceSuppliersFromServer,
+} from "@/features/suppliers/services/supplierStorage";
 import {
   mergeTablesFromServer,
 } from "@/features/tables/services/tableMutations";
@@ -32,7 +54,6 @@ import {
   replaceTablesFromServer,
 } from "@/features/tables/services/tableStorage";
 import type { Product, TableWithDetails } from "@/features/tables/types";
-import { getItem } from "@/lib/offline/localPersistence";
 
 export const DELTA_CURSOR_KEY = "sync-delta-cursor";
 
@@ -122,20 +143,6 @@ function mergeChecklistStore(
   );
 }
 
-function readChecklistStore(): ChecklistStore {
-  return (
-    getItem<ChecklistStore>("checklists") ?? {
-      templates: [],
-      items: [],
-      completions: [],
-    }
-  );
-}
-
-function readList<T>(key: string): T[] {
-  return getItem<T[]>(key) ?? [];
-}
-
 export function applySyncSnapshot(snapshot: SyncSnapshotPayload): void {
   replaceTablesFromServer(
     mergeTablesFromServer(getTablesSnapshot(), snapshot.tables),
@@ -165,7 +172,7 @@ export function applySyncDelta(delta: SyncDeltaPayload): void {
 
   if (delta.products.length > 0) {
     replaceProductsFromServer(
-      mergeById(readList<Product>("products"), delta.products),
+      mergeById(getProductsSnapshot(), delta.products),
     );
   }
 
@@ -175,35 +182,35 @@ export function applySyncDelta(delta: SyncDeltaPayload): void {
 
   if (delta.menuCatalog.length > 0) {
     replaceMenuCatalogFromServer(
-      mergeMenuCatalog(readList<MenuCategory>("menu-catalog"), delta.menuCatalog),
+      mergeMenuCatalog(getMenuCatalogSnapshot(), delta.menuCatalog),
     );
   }
 
   if (delta.sales.length > 0) {
-    replaceSalesFromServer(mergeById(readList<Sale>("sales"), delta.sales));
+    replaceSalesFromServer(mergeById(getSalesSnapshot(), delta.sales));
   }
 
   if (delta.payables.length > 0) {
     replacePayablesFromServer(
-      mergeById(readList<Payable>("payables"), delta.payables),
+      mergeById(getPayablesSnapshot(), delta.payables),
     );
   }
 
   if (delta.suppliers.length > 0) {
     replaceSuppliersFromServer(
-      mergeById(readList<Supplier>("suppliers"), delta.suppliers),
+      mergeById(getSuppliersSnapshot(), delta.suppliers),
     );
   }
 
   if (delta.purchases.length > 0) {
     replacePurchasesFromServer(
-      mergeById(readList<PurchaseRecord>("purchases"), delta.purchases),
+      mergeById(getPurchasesSnapshot(), delta.purchases),
     );
   }
 
   if (delta.stockMovements.length > 0) {
     replaceStockMovementsFromServer(
-      mergeById(readList<StockMovement>("stock-movements"), delta.stockMovements),
+      mergeById(getStockMovementsSnapshot(), delta.stockMovements),
     );
   }
 
@@ -214,7 +221,7 @@ export function applySyncDelta(delta: SyncDeltaPayload): void {
 
   if (checklistChanged) {
     replaceChecklistStoreFromServer(
-      mergeChecklistStore(readChecklistStore(), delta.checklists),
+      mergeChecklistStore(getChecklistsSnapshot(), delta.checklists),
     );
   }
 }

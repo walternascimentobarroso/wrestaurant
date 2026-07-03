@@ -41,11 +41,12 @@ import {
   type SyncSnapshotPayload,
 } from "./syncHydration";
 
-const DELTA_POLL_MS = 60_000;
+const DELTA_POLL_MS = 15_000;
 
 let cleanup: (() => void) | null = null;
 let handlersRegistered = false;
 let deltaPollTimer: ReturnType<typeof setInterval> | null = null;
+let visibilityHandler: (() => void) | null = null;
 
 async function handleSettingsMutation(mutation: SyncMutation): Promise<void> {
   if (mutation.operation !== "updateCurrency") {
@@ -125,6 +126,7 @@ export async function pullSyncDelta(): Promise<void> {
 
   const cursor = getItem<string>(DELTA_CURSOR_KEY);
   if (!cursor) {
+    await hydrateAllFromSnapshot();
     return;
   }
 
@@ -153,6 +155,27 @@ function stopDeltaPolling(): void {
   if (deltaPollTimer !== null) {
     clearInterval(deltaPollTimer);
     deltaPollTimer = null;
+  }
+}
+
+function startVisibilitySync(): void {
+  if (visibilityHandler !== null || typeof document === "undefined") {
+    return;
+  }
+
+  visibilityHandler = (): void => {
+    if (document.visibilityState === "visible") {
+      void pullSyncDelta();
+    }
+  };
+
+  document.addEventListener("visibilitychange", visibilityHandler);
+}
+
+function stopVisibilitySync(): void {
+  if (visibilityHandler !== null) {
+    document.removeEventListener("visibilitychange", visibilityHandler);
+    visibilityHandler = null;
   }
 }
 
@@ -200,6 +223,7 @@ export function initSync(): () => void {
     void pullSyncDelta();
   });
   startDeltaPolling();
+  startVisibilitySync();
 
   if (typeof window !== "undefined" && "serviceWorker" in navigator) {
     if (process.env.NODE_ENV === "development") {
@@ -217,6 +241,7 @@ export function initSync(): () => void {
     cleanup?.();
     cleanup = null;
     stopDeltaPolling();
+    stopVisibilitySync();
   };
 }
 

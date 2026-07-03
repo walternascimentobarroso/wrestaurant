@@ -39,6 +39,9 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-table-occupied: var(--table-occupied);
+  --color-table-occupied-foreground: var(--table-occupied-foreground);
+  --color-table-occupied-muted: var(--table-occupied-muted);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

@@ -39,6 +39,11 @@
   --shadow-elevated: 0 1px 0 0 #4c2b0833, 0 4px 0 0 #4c2b0814, 0 8px 20px #4c2b0826;
   --shadow-elevated-lg: 0 2px 0 0 #4c2b0838, 0 6px 0 0 #4c2b081a, 0 14px 28px #4c2b0830;
   --shadow-pressed: 0 1px 0 0 #4c2b0826, 0 2px 6px #4c2b081a;
+  --table-occupied: #d7bda6;
+  --table-occupied-foreground: #4c2b08;
+  --table-occupied-muted: #6d3914;
+  --table-occupied-border: #8a5e32;
+  --table-occupied-ring: #8a5e3280;
 }
 
 .dark {
@@ -76,4 +81,9 @@
   --shadow-elevated: 0 1px 0 0 #00000040, 0 4px 0 0 #00000026, 0 10px 24px #0000004d;
   --shadow-elevated-lg: 0 2px 0 0 #0000004d, 0 6px 0 0 #00000033, 0 16px 32px #00000059;
   --shadow-pressed: 0 1px 0 0 #00000033, 0 2px 8px #00000040;
+  --table-occupied: #d7bda6;
+  --table-occupied-foreground: #4c2b08;
+  --table-occupied-muted: #6d3914;
+  --table-occupied-border: #c9a88f;
+  --table-occupied-ring: #d7bda699;
 }

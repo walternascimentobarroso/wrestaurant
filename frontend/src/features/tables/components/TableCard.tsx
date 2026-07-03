@@ -22,19 +22,26 @@ export function TableCard({ table }: TableCardProps) {
       className={cn(
         "group flex aspect-square w-full min-w-0 flex-col rounded-2xl border p-3 shadow-elevated transition hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:shadow-pressed sm:p-4 lg:p-5",
         isOccupied
-          ? "border-2 border-primary bg-[#f5ebe3] shadow-elevated-lg ring-2 ring-primary/50 dark:bg-primary/40 dark:ring-primary/60"
+          ? "border-2 border-[var(--table-occupied-border)] bg-table-occupied shadow-elevated-lg ring-2 ring-[var(--table-occupied-ring)]"
           : "border-border bg-card",
       )}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          <p
+            className={cn(
+              "text-sm font-medium uppercase tracking-wide",
+              isOccupied
+                ? "text-muted-foreground dark:text-table-occupied-muted"
+                : "text-muted-foreground",
+            )}
+          >
             {categoryLabel}
           </p>
           <p
             className={cn(
               "mt-1 font-heading text-3xl font-bold sm:text-4xl lg:text-5xl",
-              isOccupied ? "text-primary" : "text-foreground",
+              isOccupied ? "text-primary dark:text-table-occupied-foreground" : "text-foreground",
             )}
           >
             {table.number}
@@ -52,13 +59,20 @@ export function TableCard({ table }: TableCardProps) {
         </span>
       </div>
 
-      <div className="mt-auto space-y-1 pt-4 text-sm text-muted-foreground">
+      <div
+        className={cn(
+          "mt-auto space-y-1 pt-4 text-sm",
+          isOccupied
+            ? "text-muted-foreground dark:text-table-occupied-muted"
+            : "text-muted-foreground",
+        )}
+      >
         {isOccupied ? (
           <>
             <p>
               {table.itemCount} {table.itemCount === 1 ? "item" : "itens"}
             </p>
-            <p className="font-semibold text-foreground">
+            <p className="font-semibold text-foreground dark:text-table-occupied-foreground">
               {formatCurrency(table.total)}
             </p>
           </>

@@ -65,7 +65,7 @@ export function TablesPage() {
                 <h2 className="mb-2 font-heading text-lg font-semibold text-foreground sm:mb-3">
                   {TABLE_SECTION_LABELS[category]}
                 </h2>
-                <div className="flex w-full min-w-0 flex-wrap gap-2 sm:gap-2.5 lg:gap-3">
+                <div className="grid w-full min-w-0 grid-cols-[repeat(auto-fill,minmax(11rem,11rem))] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(12rem,12rem))] sm:gap-2.5 lg:grid-cols-[repeat(auto-fill,minmax(13rem,13rem))] lg:gap-3">
                   {categoryTables.map((table) => (
                     <TableCard key={table.id} table={table} />
                   ))}

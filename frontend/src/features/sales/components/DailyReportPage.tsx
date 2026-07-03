@@ -1,59 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Banknote, ClipboardList, CreditCard, Receipt } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { AppHeaderActions } from "@/components/app-header-actions";
 import { buttonVariants } from "@/components/ui/button";
 import { brand } from "@/design-system";
-import { useSettings } from "@/features/settings/hooks/useSettings";
 import { cn } from "@/lib/utils";
 
 import { DailyReportPanel } from "./DailyReportPanel";
+import { DailyReportSummaryCards } from "./DailyReportSummaryCards";
 import { useSales } from "../hooks/useSales";
 import { formatReportDate } from "../utils/formatReportDate";
 
-function StatCard({
-  label,
-  value,
-  detail,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  detail?: string;
-  icon: typeof Receipt;
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-pressed">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          <p className="mt-1 font-heading text-2xl font-bold text-foreground">{value}</p>
-          {detail ? (
-            <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
-          ) : null}
-        </div>
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="size-5" aria-hidden />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function DailyReportPage() {
-  const { dailySales, dailyTotal, dailySalesCount } = useSales();
-  const { formatCurrency } = useSettings();
-
-  const cashTotal = dailySales
-    .filter((sale) => sale.paymentMethod === "cash")
-    .reduce((sum, sale) => sum + sale.total, 0);
-  const cardTotal = dailySales
-    .filter((sale) => sale.paymentMethod === "card")
-    .reduce((sum, sale) => sum + sale.total, 0);
-  const cashCount = dailySales.filter((sale) => sale.paymentMethod === "cash").length;
-  const cardCount = dailySales.filter((sale) => sale.paymentMethod === "card").length;
+  const { dailySales } = useSales();
 
   return (
     <div className="flex h-dvh flex-col bg-background">
@@ -86,43 +47,12 @@ export function DailyReportPage() {
 
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-6 lg:px-8">
         <div className="space-y-6">
-          <section
-            aria-label="Resumo do dia"
-            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            <StatCard
-              label="Total do dia"
-              value={formatCurrency(dailyTotal)}
-              detail={
-                dailySalesCount === 1
-                  ? "1 venda registrada"
-                  : `${dailySalesCount} vendas registradas`
-              }
-              icon={Receipt}
-            />
-            <StatCard
-              label="Vendas"
-              value={String(dailySalesCount)}
-              detail={dailySalesCount === 1 ? "registrada hoje" : "registradas hoje"}
-              icon={ClipboardList}
-            />
-            <StatCard
-              label="Dinheiro"
-              value={formatCurrency(cashTotal)}
-              detail={
-                cashCount === 1 ? "1 pagamento em dinheiro" : `${cashCount} pagamentos em dinheiro`
-              }
-              icon={Banknote}
-            />
-            <StatCard
-              label="Cartão"
-              value={formatCurrency(cardTotal)}
-              detail={
-                cardCount === 1 ? "1 pagamento no cartão" : `${cardCount} pagamentos no cartão`
-              }
-              icon={CreditCard}
-            />
-          </section>
+          <DailyReportSummaryCards
+            sales={dailySales}
+            countDetail={(count) =>
+              count === 1 ? "1 venda registrada hoje" : `${count} vendas registradas hoje`
+            }
+          />
 
           <section aria-label="Detalhes das vendas">
             <DailyReportPanel sales={dailySales} showSummary={false} layout="page" />

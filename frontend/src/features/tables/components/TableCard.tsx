@@ -20,9 +20,9 @@ export function TableCard({ table }: TableCardProps) {
     <Link
       href={`/mesas/${table.id}`}
       className={cn(
-        "group flex aspect-[5/4] min-w-[8rem] flex-[1_1_8rem] flex-col rounded-2xl border p-3 shadow-elevated transition hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:shadow-pressed sm:aspect-[4/3] sm:min-w-[9rem] sm:flex-[1_1_9rem] sm:p-4 lg:min-w-[10rem] lg:flex-[1_1_10rem] lg:p-5",
+        "group flex aspect-square w-full min-w-0 flex-col rounded-2xl border p-3 shadow-elevated transition hover:-translate-y-0.5 hover:shadow-elevated-lg active:translate-y-px active:shadow-pressed sm:p-4 lg:p-5",
         isOccupied
-          ? "border-primary/50 bg-primary/15 ring-2 ring-primary/25"
+          ? "border-2 border-primary bg-[#f5ebe3] shadow-elevated-lg ring-2 ring-primary/50 dark:bg-primary/40 dark:ring-primary/60"
           : "border-border bg-card",
       )}
     >
@@ -31,7 +31,12 @@ export function TableCard({ table }: TableCardProps) {
           <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             {categoryLabel}
           </p>
-          <p className="mt-1 font-heading text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
+          <p
+            className={cn(
+              "mt-1 font-heading text-3xl font-bold sm:text-4xl lg:text-5xl",
+              isOccupied ? "text-primary" : "text-foreground",
+            )}
+          >
             {table.number}
           </p>
         </div>
@@ -39,7 +44,7 @@ export function TableCard({ table }: TableCardProps) {
           className={cn(
             "rounded-full px-3 py-1 text-xs font-semibold",
             isOccupied
-              ? "bg-primary/20 text-primary"
+              ? "bg-primary text-primary-foreground shadow-sm"
               : "bg-accent/20 text-accent",
           )}
         >

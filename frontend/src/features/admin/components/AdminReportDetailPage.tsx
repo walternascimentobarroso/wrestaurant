@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { DailyReportPanel } from "@/features/sales/components/DailyReportPanel";
+import { DailyReportSummaryCards } from "@/features/sales/components/DailyReportSummaryCards";
 import { useSales } from "@/features/sales/hooks/useSales";
 import {
   formatReportDate,
@@ -63,8 +64,18 @@ export function AdminReportDetailPage({ dateKey }: AdminReportDetailPageProps) {
         </p>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        <DailyReportPanel sales={report.sales} />
+      <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-8">
+        <div className="space-y-6">
+          <DailyReportSummaryCards sales={report.sales} />
+
+          <section aria-label="Detalhes das vendas">
+            <DailyReportPanel
+              sales={report.sales}
+              showSummary={false}
+              layout="page"
+            />
+          </section>
+        </div>
       </div>
     </div>
   );

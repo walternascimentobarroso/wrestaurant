@@ -147,6 +147,44 @@ def deduct_stock_for_order(
         )
 
 
+def reverse_stock_for_sale(
+    db: Session,
+    sale_id: str,
+    reason: str,
+) -> None:
+    normalized_reason = reason.strip()
+    movements = (
+        db.query(StockMovement)
+        .filter(
+            StockMovement.reference_id == sale_id,
+            StockMovement.type == "sale",
+        )
+        .all()
+    )
+
+    for movement in movements:
+        product = db.get(Product, movement.product_id)
+        if not product:
+            continue
+
+        restore_delta = -movement.delta
+        if restore_delta == 0:
+            continue
+
+        quantity_after = product.stock_quantity + restore_delta
+        product.stock_quantity = quantity_after
+        db.add(
+            create_movement(
+                product,
+                "adjustment",
+                restore_delta,
+                quantity_after,
+                reference_id=sale_id,
+                reason=f"Reversão de venda: {normalized_reason}",
+            ),
+        )
+
+
 def adjust_product_stock(
     db: Session,
     product_id: str,

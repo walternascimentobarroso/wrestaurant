@@ -178,6 +178,7 @@ def receive_payment(
         total=total,
         description=", ".join(descriptions),
         items=sale_items,
+        source="table",
     )
 
     deduct_stock_for_order(db, order_items, sale_id, products_map)

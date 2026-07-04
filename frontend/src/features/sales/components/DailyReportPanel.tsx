@@ -1,7 +1,9 @@
 "use client";
 
+import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { useSettings } from "@/features/settings/hooks/useSettings";
 
 import { DailyReportTabs } from "./DailyReportTabs";
@@ -19,6 +21,9 @@ interface DailyReportPanelProps {
   showTabs?: boolean;
   showSummary?: boolean;
   layout?: "default" | "page";
+  editable?: boolean;
+  onEdit?: (sale: Sale) => void;
+  onDelete?: (sale: Sale) => void;
 }
 
 export function DailyReportPanel({
@@ -26,6 +31,9 @@ export function DailyReportPanel({
   showTabs = true,
   showSummary = true,
   layout = "default",
+  editable = false,
+  onEdit,
+  onDelete,
 }: DailyReportPanelProps) {
   const { formatCurrency } = useSettings();
   const [view, setView] = useState<"list" | "chart">("list");
@@ -71,10 +79,39 @@ export function DailyReportPanel({
                       Mesa {sale.tableNumber} · {PAYMENT_LABELS[sale.paymentMethod]}
                       {duration ? ` · ${duration}` : ""}
                     </p>
+                    {sale.adjustmentReason ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Correção: {sale.adjustmentReason}
+                      </p>
+                    ) : null}
                   </div>
-                  <p className="shrink-0 font-heading text-lg font-bold text-primary">
-                    {formatCurrency(sale.total)}
-                  </p>
+                  <div className="flex shrink-0 items-start gap-2">
+                    {editable ? (
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => onEdit?.(sale)}
+                          aria-label="Editar venda"
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => onDelete?.(sale)}
+                          aria-label="Excluir venda"
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </div>
+                    ) : null}
+                    <p className="font-heading text-lg font-bold text-primary">
+                      {formatCurrency(sale.total)}
+                    </p>
+                  </div>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-foreground">
                   {sale.description}

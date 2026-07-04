@@ -106,6 +106,21 @@ export function markRetry(id: string, error: string): void {
   writeQueue(queue);
 }
 
+export function markAuthFailure(id: string, error: string): void {
+  const queue = readQueue().map((mutation) => {
+    if (mutation.id !== id) {
+      return mutation;
+    }
+
+    return {
+      ...mutation,
+      lastError: error,
+    };
+  });
+
+  writeQueue(queue);
+}
+
 export function resetRetries(id: string): void {
   const queue = readQueue().map((mutation) => {
     if (mutation.id !== id) {
@@ -298,6 +313,7 @@ export const syncQueue = {
   getAll,
   getPendingCount,
   markRetry,
+  markAuthFailure,
   resetRetries,
   remapEntityId,
   remapPayloadCategoryId,

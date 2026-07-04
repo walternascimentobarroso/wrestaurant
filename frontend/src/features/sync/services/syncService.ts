@@ -1,5 +1,6 @@
 import { registerChecklistSyncHandlers } from "@/features/checklists/services/checklistSyncHandlers";
 import { hydrateChecklistsIfEmpty } from "@/features/checklists/services/checklistStorage";
+import { expireAdminSession } from "@/features/admin/services/adminAuth";
 import { registerMenuCatalogSyncHandlers } from "@/features/menu/services/menuSyncHandlers";
 import { registerProductSyncHandlers } from "@/features/menu/services/productSyncHandlers";
 import { hydrateMenuCatalogIfEmpty } from "@/features/menu/services/menuCatalogStorage";
@@ -25,6 +26,7 @@ import {
   processQueue,
   registerHandler,
   setItem,
+  setSyncAuthErrorHandler,
   SYNC_MAX_RETRIES,
   syncEngine,
   syncQueue,
@@ -218,6 +220,7 @@ export function initSync(): () => void {
   }
 
   registerSyncHandlers();
+  setSyncAuthErrorHandler(expireAdminSession);
   cleanup = syncEngine.start();
   void hydrateAll().then(() => {
     void pullSyncDelta();
@@ -240,6 +243,7 @@ export function initSync(): () => void {
   return () => {
     cleanup?.();
     cleanup = null;
+    setSyncAuthErrorHandler(null);
     stopDeltaPolling();
     stopVisibilitySync();
   };

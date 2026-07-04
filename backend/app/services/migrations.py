@@ -64,6 +64,25 @@ def migrate_sale_opened_at() -> None:
         conn.execute(text("ALTER TABLE sales ADD COLUMN opened_at TIMESTAMPTZ"))
 
 
+def migrate_sale_source_columns() -> None:
+    """Track sale origin and manual correction reason."""
+    inspector = inspect(engine)
+    if "sales" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("sales")}
+    with engine.begin() as conn:
+        if "source" not in columns:
+            conn.execute(
+                text(
+                    "ALTER TABLE sales "
+                    "ADD COLUMN source VARCHAR(16) NOT NULL DEFAULT 'table'",
+                ),
+            )
+        if "adjustment_reason" not in columns:
+            conn.execute(text("ALTER TABLE sales ADD COLUMN adjustment_reason TEXT"))
+
+
 def migrate_invoice_import_foundation() -> None:
     """Add supplier tax fields and ensure invoice-import tables exist on legacy DBs."""
     inspector = inspect(engine)

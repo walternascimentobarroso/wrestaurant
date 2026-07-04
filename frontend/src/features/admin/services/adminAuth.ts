@@ -3,6 +3,7 @@ import {
   loginAdmin as loginAdminApi,
   logoutAdminApi,
 } from "@/lib/api";
+import { processQueue } from "@/lib/offline";
 
 const SESSION_KEY = "restaurant-admin-session";
 const SESSION_EVENT = "restaurant-admin-session-change";
@@ -43,11 +44,24 @@ export async function loginAdmin(password: string): Promise<boolean> {
   }
   sessionStorage.setItem(SESSION_KEY, "authenticated");
   window.dispatchEvent(new Event(SESSION_EVENT));
+  void processQueue();
   return true;
 }
 
 export function logoutAdmin(): void {
   void logoutAdminApi();
+  sessionStorage.removeItem(SESSION_KEY);
+  window.dispatchEvent(new Event(SESSION_EVENT));
+}
+
+export function expireAdminSession(): void {
+  void logoutAdminApi();
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (sessionStorage.getItem(SESSION_KEY) !== "authenticated") {
+    return;
+  }
   sessionStorage.removeItem(SESSION_KEY);
   window.dispatchEvent(new Event(SESSION_EVENT));
 }

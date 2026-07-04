@@ -28,6 +28,7 @@ UI (hooks existentes)
 | 3 | [phase-3-financeiro.md](./phase-3-financeiro.md) | ✅ | Vendas, payables, suppliers, purchases + IndexedDB |
 | 4 | [phase-4-operacional.md](./phase-4-operacional.md) | ✅ | Estoque e checklists offline |
 | 5 | [phase-5-polish.md](./phase-5-polish.md) | ✅ | UI de sync, PWA, backend delta |
+| 6 | [phase-6-sales-report-crud.md](./phase-6-sales-report-crud.md) | ✅ | CRUD de vendas no relatório admin |
 
 ## Infra compartilhada
 
@@ -69,7 +70,7 @@ Models com `updated_at`: mesas, produtos, vendas, payables, suppliers, purchases
 | Produtos | `features/menu/services/productStorage.ts` | `useProducts`, `useProductAdmin` |
 | Menu/catálogo | `features/menu/services/menuCatalogStorage.ts` | `useMenuCatalog` |
 | Settings | `features/settings/services/settingsStorage.ts` | `SettingsProvider` |
-| Vendas | `features/sales/services/salesStorage.ts` | `useSales` |
+| Vendas | `features/sales/services/salesStorage.ts` | `useSales`, `useSaleAdmin` |
 | Payables | `features/payables/services/payableStorage.ts` | `usePayables` |
 | Suppliers | `features/suppliers/services/supplierStorage.ts` | `useSuppliers` |
 | Purchases | `features/purchases/services/purchaseStorage.ts` | `usePurchases` |

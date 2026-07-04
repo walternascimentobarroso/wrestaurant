@@ -35,4 +35,4 @@ export {
   initIndexedDbPersistence,
 } from "./indexedDbPersistence";
 export { syncQueue } from "./syncQueue";
-export { processQueue, registerHandler, syncEngine, startSyncEngine } from "./syncEngine";
+export { processQueue, registerHandler, setSyncAuthErrorHandler, syncEngine, startSyncEngine } from "./syncEngine";

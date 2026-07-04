@@ -1,3 +1,9 @@
+import { ApiError } from "@/lib/api";
+import {
+  formatAuthSyncError,
+  isAuthApiError,
+  SESSION_EXPIRED_MESSAGE,
+} from "@/lib/authErrors";
 import { isOnline } from "./connectivity";
 import { isTempId } from "./idGenerator";
 import * as syncQueueModule from "./syncQueue";
@@ -15,6 +21,31 @@ const lastAttemptAt = new Map<string, number>();
 let stopFn: (() => void) | null = null;
 let chain: Promise<void> = Promise.resolve();
 let running = false;
+let onAuthError: (() => void) | null = null;
+
+export function setSyncAuthErrorHandler(handler: (() => void) | null): void {
+  onAuthError = handler;
+}
+
+function resolveSyncError(error: unknown): string {
+  if (error instanceof ApiError && isAuthApiError(error.status)) {
+    return SESSION_EXPIRED_MESSAGE;
+  }
+  if (error instanceof Error) {
+    return formatAuthSyncError(error.message);
+  }
+  return "Erro desconhecido";
+}
+
+function isAuthenticationFailure(error: unknown): boolean {
+  if (error instanceof ApiError && isAuthApiError(error.status)) {
+    return true;
+  }
+  if (error instanceof Error) {
+    return /token inválido|não autenticado/i.test(error.message);
+  }
+  return false;
+}
 
 function getBackoffDelay(retries: number): number {
   const index = Math.min(retries, SYNC_BACKOFF_MS.length - 1);
@@ -112,8 +143,14 @@ async function processQueueInternal(): Promise<void> {
         syncQueueModule.dequeue(mutation.id);
         lastAttemptAt.delete(mutation.id);
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Erro desconhecido";
+        const message = resolveSyncError(error);
+
+        if (isAuthenticationFailure(error)) {
+          syncQueueModule.markAuthFailure(mutation.id, message);
+          onAuthError?.();
+          break;
+        }
+
         syncQueueModule.markRetry(mutation.id, message);
 
         const updated = syncQueueModule

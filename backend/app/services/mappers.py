@@ -152,6 +152,8 @@ def sale_to_read(sale: Sale) -> SaleRead:
         total=sale.total,
         items=[sale_item_to_read(item) for item in sale.items],
         description=sale.description,
+        source=sale.source,
+        adjustmentReason=sale.adjustment_reason,
     )
 
 

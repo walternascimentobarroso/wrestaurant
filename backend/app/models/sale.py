@@ -19,6 +19,8 @@ class Sale(Base, TimestampMixin):
     change: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     total: Mapped[float] = mapped_column(Float, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    source: Mapped[str] = mapped_column(String(16), nullable=False, default="table")
+    adjustment_reason: Mapped[str | None] = mapped_column(Text)
 
     items: Mapped[list["SaleItem"]] = relationship(
         back_populates="sale",

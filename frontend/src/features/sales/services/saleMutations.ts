@@ -1,5 +1,6 @@
 import type { Product, Table, TableOrderItem } from "@/features/tables/types";
-import type { PaymentDetails, Sale, SaleItem } from "../types";
+import type { PaymentDetails, Sale, SaleFormInput, SaleItem } from "../types";
+import { buildSaleFromInput } from "./saleService";
 
 export function buildSaleIdFromMutationId(mutationId: string): string {
   return `sale-${mutationId}`;
@@ -29,6 +30,7 @@ export function buildSaleFromTable(
     total,
     items,
     description,
+    source: "table",
   };
 }
 
@@ -55,6 +57,38 @@ function buildSaleItems(
   }
 
   return saleItems;
+}
+
+export function applyCreateSale(
+  sales: Sale[],
+  input: SaleFormInput,
+  products: Product[],
+  id: string,
+): Sale[] {
+  const sale = buildSaleFromInput(input, products, id);
+  return appendSale(sales, sale);
+}
+
+export function applyUpdateSale(
+  sales: Sale[],
+  id: string,
+  input: SaleFormInput,
+  products: Product[],
+): Sale[] {
+  const current = sales.find((sale) => sale.id === id);
+  if (!current) {
+    return sales;
+  }
+
+  const updated = buildSaleFromInput(input, products, id, current);
+  const withoutCurrent = sales.filter((sale) => sale.id !== id);
+  return [updated, ...withoutCurrent].sort(
+    (a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime(),
+  );
+}
+
+export function applyDeleteSale(sales: Sale[], id: string): Sale[] {
+  return sales.filter((sale) => sale.id !== id);
 }
 
 export function appendSale(sales: Sale[], sale: Sale): Sale[] {

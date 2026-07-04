@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { SyncEntity, SyncMutation } from "@/lib/offline";
+import { formatAuthSyncError, isSessionExpiredError } from "@/lib/authErrors";
 
 const ENTITY_LABELS: Record<SyncEntity, string> = {
   tables: "Mesas",
@@ -68,7 +69,9 @@ function MutationRow({
           </p>
           <p className={`text-xs font-medium ${statusClassName}`}>{statusLabel}</p>
           {mutation.lastError ? (
-            <p className="text-xs text-destructive">{mutation.lastError}</p>
+            <p className="text-xs text-destructive">
+              {formatAuthSyncError(mutation.lastError)}
+            </p>
           ) : null}
         </div>
         <div className="flex shrink-0 gap-2">
@@ -106,6 +109,9 @@ export function SyncErrorsDialog({
   onDiscard,
 }: SyncErrorsDialogProps) {
   const hasItems = pending.length > 0 || errors.length > 0;
+  const hasSessionExpired = [...pending, ...errors].some((mutation) =>
+    isSessionExpiredError(mutation.lastError),
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -114,6 +120,13 @@ export function SyncErrorsDialog({
           <DialogTitle>Fila de sincronização</DialogTitle>
           <DialogDescription>
             Operações aguardando envio ou com falha. Descarte para remover da fila.
+            {hasSessionExpired ? (
+              <>
+                {" "}
+                Faça login novamente na área administrativa e use &quot;Tentar
+                novamente&quot;.
+              </>
+            ) : null}
           </DialogDescription>
         </DialogHeader>
 

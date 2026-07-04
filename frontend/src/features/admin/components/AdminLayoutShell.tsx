@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Building2,
   ClipboardList,
@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   ListChecks,
   LogOut,
+  Loader2,
   Menu,
   Package,
   Receipt,
@@ -26,9 +27,11 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SyncStatusBadge } from "@/features/sync/components/SyncStatusBadge";
 import { brand } from "@/design-system";
+import { processQueue } from "@/lib/offline";
 import { cn } from "@/lib/utils";
 
 import { useAdminAuth } from "../hooks/useAdminAuth";
+import { verifyAdminSession } from "../services/adminAuth";
 
 const AdminPasswordDialog = dynamic(
   () =>
@@ -147,6 +150,57 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
   const router = useRouter();
   const { isAuthenticated, login } = useAdminAuth();
   const [navOpen, setNavOpen] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(() => !isAuthenticated);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function verifySession(): Promise<void> {
+      if (!isAuthenticated) {
+        if (!cancelled) {
+          setSessionChecked(true);
+        }
+        return;
+      }
+
+      await verifyAdminSession();
+      if (!cancelled) {
+        setSessionChecked(true);
+      }
+    }
+
+    void verifySession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    function handleVisibilityChange(): void {
+      if (document.visibilityState === "visible" && isAuthenticated) {
+        void verifyAdminSession();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isAuthenticated]);
+
+  function handleLoginSuccess(): void {
+    void processQueue();
+    router.refresh();
+  }
+
+  if (!sessionChecked && isAuthenticated) {
+    return (
+      <div className="flex h-dvh items-center justify-center bg-background">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -176,7 +230,7 @@ export function AdminLayoutShell({ children }: AdminLayoutShellProps) {
             }
           }}
           onLogin={login}
-          onSuccess={() => router.refresh()}
+          onSuccess={handleLoginSuccess}
         />
       </div>
     );

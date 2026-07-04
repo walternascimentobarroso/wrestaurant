@@ -22,6 +22,7 @@ from app.models.enums import CurrencyCode, TableCategory, TableStatus
 from app.services.migrations import (
     migrate_invoice_import_foundation,
     migrate_sale_opened_at,
+    migrate_sale_source_columns,
     migrate_updated_at_columns,
 )
 
@@ -203,4 +204,5 @@ def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     migrate_invoice_import_foundation()
     migrate_sale_opened_at()
+    migrate_sale_source_columns()
     migrate_updated_at_columns()
